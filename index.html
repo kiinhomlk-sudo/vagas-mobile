@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+</head>
+
+<body>
+  
+</body>
+
+</html><!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1220">
+<title>Vagas Mobile</title>
+
+<style>
+:root{
+  --bg:#0b1220;
+  --card:#111a2e;
+  --muted:#8ea0c8;
+  --text:#eef3ff;
+  --pri:#4f8cff;
+  --pri2:#6b5cff;
+  --ok:#2dd4bf;
+  --line:#22304f;
+  --danger:#ff6b6b;
+  --warning:#ffc857;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:linear-gradient(180deg,#09101d,#0f172a);
+  color:var(--text);
+}
+
+button,input,select{font:inherit}
+button,a{cursor:pointer}
+
+.app{
+  max-width:920px;
+  min-height:100vh;
+  margin:auto;
+  padding:16px 14px 30px;
+}
+
+.top{
+  position:sticky;
+  top:0;
+  z-index:5;
+  padding:12px 0 14px;
+  background:rgba(11,18,32,.94);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);
+}
+
+h1{
+  margin:0 0 7px;
+  font-size:23px;
+}
+
+.sub{
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.4;
+}
+
+.tabs{
+  display:flex;
+  gap:10px;
+  margin:15px 0 12px;
+}
+
+.tab{
+  flex:1;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px 10px;
+  background:#0f172a;
+  color:var(--text);
+  font-weight:700;
+}
+
+.tab.active{
+  border-color:transparent;
+  background:linear-gradient(135deg,var(--pri),var(--pri2));
+}
+
+.panel,.job{
+  margin-top:12px;
+  padding:14px;
+  border:1px solid var(--line);
+  border-radius:20px;
+  background:rgba(17,26,46,.95);
+  box-shadow:0 10px 30px rgba(0,0,0,.2);
+}
+
+.grid,.grid3,.extra-grid,.actions{
+  display:grid;
+  gap:9px;
+}
+
+.grid{
+  grid-template-columns:1fr 1fr;
+}
+
+.grid3{
+  grid-template-columns:repeat(3,1fr);
+}
+
+input,select{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  color:var(--text);
+  background:#0b1324;
+  outline:none;
+}
+
+input:focus,select:focus{
+  border-color:var(--pri);
+  box-shadow:0 0 0 3px rgba(79,140,255,.15);
+}
+
+.sort{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-top:12px;
+}
+
+.result{
+  color:var(--muted);
+  font-size:13px;
+}
+
+.list{
+  display:grid;
+  gap:12px;
+  margin-top:12px;
+}
+
+.head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:8px;
+}
+
+.badges{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.badge{
+  padding:6px 9px;
+  border:1px solid #29436b;
+  border-radius:999px;
+  background:#17233e;
+  font-size:11px;
+  font-weight:700;
+}
+
+.badge.green{
+  color:#aaf5e3;
+  border-color:#278c7b;
+  background:#10352f;
+}
+
+.title{
+  margin:12px 0 5px;
+  font-size:18px;
+  line-height:1.2;
+}
+
+.company{
+  font-weight:700;
+}
+
+.meta{
+  margin:7px 0 11px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.55;
+}
+
+.salary{
+  display:flex;
+  justify-content:space-between;
+  align-items:end;
+  gap:10px;
+  margin:12px 0;
+  padding:11px 12px;
+  border:1px solid #278c7b;
+  border-radius:14px;
+  background:#10352f;
+}
+
+.salary span{
+  display:block;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.salary strong{
+  display:block;
+  color:#9cf5df;
+  font-size:17px;
+}
+
+.extra-grid{
+  grid-template-columns:1fr 1fr;
+  margin:12px 0;
+}
+
+.extra{
+  padding:10px;
+  border:1px solid #1c3555;
+  border-radius:12px;
+  background:#0a1729;
+}
+
+.extra small{
+  display:block;
+  color:var(--muted);
+  font-size:10px;
+  margin-bottom:3px;
+}
+
+.extra b{
+  font-size:12px;
+  line-height:1.35;
+  word-break:break-word;
+}
+
+.actions{
+  grid-template-columns:1fr 1fr;
+  margin-top:13px;
+}
+
+.btn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  padding:12px;
+  border:0;
+  border-radius:14px;
+  color:var(--text);
+  font-weight:700;
+  text-align:center;
+  text-decoration:none;
+}
+
+.btn.primary{
+  background:linear-gradient(135deg,var(--pri),var(--pri2));
+}
+
+.btn.ok{
+  background:linear-gradient(135deg,var(--ok),#18a999);
+  color:#05201c;
+}
+
+.btn.muted{
+  background:#17243d;
+  border:1px solid #29456d;
+}
+
+.btn.danger{
+  background:transparent;
+  border:1px solid rgba(255,107,107,.55);
+  color:#ffb4b4;
+}
+
+.fav{
+  width:auto;
+  padding:0 4px;
+  border:0;
+  background:transparent;
+  color:#7d91b0;
+  font-size:23px;
+}
+
+.fav.active{
+  color:var(--warning);
+}
+
+.details{
+  display:none;
+  margin-top:13px;
+  padding-top:12px;
+  border-top:1px solid var(--line);
+}
+
+.details.open{
+  display:block;
+}
+
+.details h3{
+  margin:0 0 8px;
+  font-size:14px;
+}
+
+.details p{
+  margin:7px 0;
+  color:#c6d3e9;
+  font-size:13px;
+}
+
+.empty{
+  padding:30px;
+  border:1px dashed #2c4c76;
+  border-radius:18px;
+  color:var(--muted);
+  text-align:center;
+}
+
+.toast{
+  display:none;
+  position:fixed;
+  z-index:20;
+  left:50%;
+  bottom:20px;
+  transform:translateX(-50%);
+  padding:12px 16px;
+  border:1px solid #31537a;
+  border-radius:999px;
+  background:#10243d;
+  box-shadow:0 12px 30px rgba(0,0,0,.3);
+  font-size:13px;
+  font-weight:700;
+  text-align:center;
+  max-width:90%;
+}
+
+.hidden{
+  display:none!important;
+}
+
+.footer{
+  padding-top:15px;
+  color:var(--muted);
+  text-align:center;
+  font-size:11px;
+}
+
+@media(max-width:650px){
+  .grid3{
+    grid-template-columns:1fr 1fr;
+  }
+}
+
+@media(max-width:460px){
+  .grid,
+  .grid3,
+  .extra-grid,
+  .actions{
+    grid-template-columns:1fr;
+  }
+
+  .sort{
+    align-items:stretch;
+    flex-direction:column;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    scroll-behavior:auto!important;
+    animation:none!important;
+    transition:none!important;
+  }
+}
+</style>
+</head>
+
+<body>
+<main class="app">
+
+<header class="top">
+  <h1>Vagas Mobile</h1>
+
+  <div class="sub">
+    Busque vagas, consulte os detalhes e prepare seu e-mail.
+  </div>
+
+  <nav class="tabs">
+    <button id="tabVagas" class="tab active" onclick="changeTab('vagas')">
+      Vagas
+    </button>
+
+    <button id="tabEnviados" class="tab" onclick="changeTab('enviados')">
+      Enviados <span id="sentBadge"></span>
+    </button>
+  </nav>
+</header>
+
+<section id="viewVagas">
+
+  <div class="panel">
+
+    <div class="grid">
+      <input
+        id="search"
+        type="search"
+        placeholder="Cargo, empresa ou cidade"
+        oninput="renderJobs()"
+      >
+
+      <select id="state" onchange="renderJobs()"></select>
+    </div>
+
+    <div class="grid3" style="margin-top:9px">
+
+      <select id="type" onchange="renderJobs()">
+        <option value="">Todos os tipos</option>
+        <option value="H-2A">H-2A</option>
+        <option value="H-2B">H-2B</option>
+      </select>
+
+      <input
+        id="minSalary"
+        type="number"
+        min="0"
+        step="0.01"
+        placeholder="Salário mínimo"
+        oninput="renderJobs()"
+      >
+
+      <input
+        id="maxSalary"
+        type="number"
+        min="0"
+        step="0.01"
+        placeholder="Salário máximo"
+        oninput="renderJobs()"
+      >
+
+    </div>
+
+    <div class="sort">
+      <span id="resultCount" class="result"></span>
+
+      <select id="sort" onchange="renderJobs()">
+        <option value="relevance">Ordenar: relevância</option>
+        <option value="salaryDesc">Maior salário</option>
+        <option value="salaryAsc">Menor salário</option>
+        <option value="newest">Mais recentes</option>
+        <option value="title">Título A–Z</option>
+      </select>
+    </div>
+
+  </div>
+
+  <div id="jobs" class="list"></div>
+
+</section>
+
+<section id="viewEnviados" class="hidden">
+
+  <div class="panel sort">
+    <div>
+      <b style="font-size:18px">Vagas enviadas</b>
+      <div class="result">Histórico salvo neste navegador</div>
+    </div>
+
+    <button class="btn danger" onclick="clearSent()">
+      Limpar
+    </button>
+  </div>
+
+  <div id="sentJobs" class="list"></div>
+
+</section>
+
+<div class="footer">
+  Dados fictícios de demonstração. Substitua pelos anúncios oficiais antes de publicar.
+</div>
+
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const STORAGE_SENT="vagas_enviadas_v2";
+const STORAGE_FAVORITES="vagas_favoritas_v2";
+
+const jobs=[
+  {
+    id:1,
+    title:"Agricultural Equipment Operator",
+    company:"Green Valley Farms",
+    city:"Immokalee",
+    state:"FL",
+    type:"H-2A",
+    salaryMin:18,
+    salaryMax:22,
+    posted:"2026-08-10",
+    start:"2026-09-01",
+    end:"2027-06-30",
+    hours:"40 h/semana",
+    workers:"8 vagas",
+    experience:"Não informado",
+    housing:"Disponível conforme a oferta",
+    transport:"Transporte local",
+    meals:"Não informado",
+    tools:"Fornecidas",
+    email:"hr@greenvalleyfarms.example",
+    description:"Operação de máquinas agrícolas, manutenção básica e apoio à colheita."
+  },
+
+  {
+    id:2,
+    title:"Harvest Worker",
+    company:"Sunrise Produce",
+    city:"Yakima",
+    state:"WA",
+    type:"H-2A",
+    salaryMin:17,
+    salaryMax:20,
+    posted:"2026-08-08",
+    start:"2026-09-15",
+    end:"2026-11-20",
+    hours:"35 h/semana",
+    workers:"20 vagas",
+    experience:"Desejável",
+    housing:"Moradia indicada",
+    transport:"Entre moradia e fazenda",
+    meals:"Cozinha disponível",
+    tools:"Fornecidas",
+    email:"jobs@sunriseproduce.example",
+    description:"Colheita, triagem e embalagem de produtos agrícolas."
+  },
+
+  {
+    id:3,
+    title:"Landscape Laborer",
+    company:"Blue River Services",
+    city:"Raleigh",
+    state:"NC",
+    type:"H-2B",
+    salaryMin:16,
+    salaryMax:19,
+    posted:"2026-08-05",
+    start:"2026-10-01",
+    end:"2027-04-30",
+    hours:"40 h/semana",
+    workers:"6 vagas",
+    experience:"Não exigida",
+    housing:"Não informado",
+    transport:"Não informado",
+    meals:"Não informado",
+    tools:"Fornecidas",
+    email:"careers@blueriverservices.example",
+    description:"Manutenção de áreas externas, plantio, poda e limpeza."
+  },
+
+  {
+    id:4,
+    title:"Truck Driver Farm Support",
+    company:"Prairie Logistics",
+    city:"Lubbock",
+    state:"TX",
+    type:"H-2A",
+    salaryMin:20,
+    salaryMax:25,
+    posted:"2026-08-12",
+    start:"2026-09-05",
+    end:"2027-01-15",
+    hours:"40 h/semana",
+    workers:"4 vagas",
+    experience:"Carteira recomendada",
+    housing:"Não informado",
+    transport:"Relacionado ao trabalho",
+    meals:"Não informado",
+    tools:"Veículo fornecido",
+    email:"apply@prairielogistics.example",
+    description:"Transporte interno, logística e movimentação de cargas."
+  },
+
+  {
+    id:5,
+    title:"Greenhouse Worker",
+    company:"FreshLeaf Growers",
+    city:"Homestead",
+    state:"FL",
+    type:"H-2A",
+    salaryMin:17,
+    salaryMax:21,
+    posted:"2026-08-11",
+    start:"2026-09-10",
+    end:"2027-02-28",
+    hours:"40 h/semana",
+    workers:"12 vagas",
+    experience:"Não exigida",
+    housing:"Possível conforme a oferta",
+    transport:"Não informado",
+    meals:"Não informado",
+    tools:"Equipamentos básicos",
+    email:"hello@freshleafgrowers.example",
+    description:"Cuidados com estufa, irrigação e seleção de mudas."
+  }
+];
+
+const money=value=>"$"+Number(value).toFixed(2)+"/h";
+
+const escapeHTML=value=>String(value ?? "")
+  .replaceAll("&","&amp;")
+  .replaceAll("<","&lt;")
+  .replaceAll(">","&gt;")
+  .replaceAll('"',"&quot;")
+  .replaceAll("'","&#039;");
+
+function getSent(){
+  return JSON.parse(localStorage.getItem(STORAGE_SENT)||"[]");
+}
+
+function saveSent(list){
+  localStorage.setItem(STORAGE_SENT,JSON.stringify(list));
+  updateSentBadge();
+}
+
+function getFavorites(){
+  return JSON.parse(localStorage.getItem(STORAGE_FAVORITES)||"[]");
+}
+
+function showToast(message){
+  const toast=document.getElementById("toast");
+
+  toast.textContent=message;
+  toast.style.display="block";
+
+  clearTimeout(window.toastTimer);
+
+  window.toastTimer=setTimeout(()=>{
+    toast.style.display="none";
+  },1800);
+}
+
+function updateSentBadge(){
+  const total=getSent().length;
+
+  document.getElementById("sentBadge").textContent=
+    total ? "("+total+")" : "";
+}
+
+function changeTab(name){
+  document.getElementById("viewVagas")
+    .classList.toggle("hidden",name!=="vagas");
+
+  document.getElementById("viewEnviados")
+    .classList.toggle("hidden",name!=="enviados");
+
+  document.getElementById("tabVagas")
+    .classList.toggle("active",name==="vagas");
+
+  document.getElementById("tabEnviados")
+    .classList.toggle("active",name==="enviados");
+
+  if(name==="enviados"){
+    renderSentJobs();
+  }
+}
+
+function createEmail(job){
+  const subject="Interest in the "+job.title+" position";
+
+  const body=`Hello,
+
+I am interested in the ${job.title} position at ${job.company}.
+Location: ${job.city}, ${job.state}
+Employment period: ${job.start} to ${job.end}
+Pay range: ${money(job.salaryMin)} to ${money(job.salaryMax)}
+
+Could you please provide me with more information about this job, including the application process, housing, transportation, and requirements?
+
+Thank you for your time.
+
+Best regards.`;
+
+  return{
+    subject,
+    body,
+    complete:
+`Email: ${job.email}
+Subject: ${subject}
+Message:
+${body}`
+  };
+}
+
+function createMailto(job){
+  const email=createEmail(job);
+
+  return "mailto:"+encodeURIComponent(job.email)+
+    "?subject="+encodeURIComponent(email.subject)+
+    "&body="+encodeURIComponent(email.body);
+}
+
+function addToSent(job){
+  const list=getSent();
+
+  if(!list.some(item=>item.id===job.id)){
+    list.unshift({
+      ...job,
+      sentAt:new Date().toISOString()
+    });
+
+    saveSent(list);
+    showToast("Vaga adicionada em enviados");
+  }
+}
+
+async function copyCompleteEmail(job){
+  const email=createEmail(job);
+
+  try{
+    await navigator.clipboard.writeText(email.complete);
+    showToast("E-mail, assunto e mensagem copiados");
+  }catch(error){
+    showToast("Não foi possível copiar");
+  }
+}
+
+function toggleFavorite(id){
+  let list=getFavorites();
+
+  if(list.includes(id)){
+    list=list.filter(item=>item!==id);
+  }else{
+    list.push(id);
+  }
+
+  localStorage.setItem(STORAGE_FAVORITES,JSON.stringify(list));
+  renderJobs();
+}
+
+function toggleDetails(id){
+  document.getElementById("details-"+id)
+    .classList.toggle("open");
+}
+
+function filteredJobs(){
+  const query=document.getElementById("search")
+    .value.toLowerCase()
+    .trim();
+
+  const state=document.getElementById("state").value;
+  const type=document.getElementById("type").value;
+  const minimum=Number(document.getElementById("minSalary").value||0);
+  const maximum=Number(document.getElementById("maxSalary").value||0);
+
+  const result=jobs.filter(job=>{
+    const text=[
+      job.title,
+      job.company,
+      job.city,
+      job.state,
+      job.type,
+      job.description
+    ].join(" ").toLowerCase();
+
+    return(
+      (!query||text.includes(query))&&
+      (!state||job.state===state)&&
+      (!type||job.type===type)&&
+      (!minimum||job.salaryMax>=minimum)&&
+      (!maximum||job.salaryMin<=maximum)
+    );
+  });
+
+  const sort=document.getElementById("sort").value;
+
+  result.sort((a,b)=>{
+    if(sort==="salaryDesc"){
+      return b.salaryMax-a.salaryMax;
+    }
+
+    if(sort==="salaryAsc"){
+      return a.salaryMin-b.salaryMin;
+    }
+
+    if(sort==="newest"){
+      return new Date(b.posted)-new Date(a.posted);
+    }
+
+    if(sort==="title"){
+      return a.title.localeCompare(b.title);
+    }
+
+    return b.id-a.id;
+  });
+
+  return result;
+}
+
+function jobCard(job){
+  const favorite=getFavorites().includes(job.id);
+
+  return`
+  <article class="job">
+
+    <div class="head">
+      <div class="badges">
+        <span class="badge green">${job.type}</span>
+        <span class="badge">${job.state}</span>
+        <span class="badge">${escapeHTML(job.city)}</span>
+      </div>
+
+      <button
+        class="fav ${favorite?"active":""}"
+        onclick="toggleFavorite(${job.id})">
+        ${favorite?"★":"☆"}
+      </button>
+    </div>
+
+    <h2 class="title">${escapeHTML(job.title)}</h2>
+
+    <div class="company">
+      ${escapeHTML(job.company)}
+    </div>
+
+    <div class="meta">
+      📍 ${escapeHTML(job.city)}, ${job.state}<br>
+      Publicada em ${job.posted}<br>
+      ${escapeHTML(job.description)}
+    </div>
+
+    <div class="salary">
+      <div>
+        <span>Faixa salarial</span>
+        <strong>${money(job.salaryMin)} – ${money(job.salaryMax)}</strong>
+      </div>
+
+      <span>${escapeHTML(job.hours)}</span>
+    </div>
+
+    <div class="extra-grid">
+
+      <div class="extra">
+        <small>Período</small>
+        <b>${job.start} até ${job.end}</b>
+      </div>
+
+      <div class="extra">
+        <small>Vagas</small>
+        <b>${escapeHTML(job.workers)}</b>
+      </div>
+
+      <div class="extra">
+        <small>Experiência</small>
+        <b>${escapeHTML(job.experience)}</b>
+      </div>
+
+      <div class="extra">
+        <small>E-mail</small>
+        <b>${escapeHTML(job.email)}</b>
+      </div>
+
+    </div>
+
+    <button
+      class="btn muted"
+      onclick="toggleDetails(${job.id})">
+      Ver todos os detalhes
+    </button>
+
+    <div id="details-${job.id}" class="details">
+      <h3>Condições da vaga</h3>
+
+      <p><b>Moradia:</b> ${escapeHTML(job.housing)}</p>
+      <p><b>Transporte:</b> ${escapeHTML(job.transport)}</p>
+      <p><b>Refeições:</b> ${escapeHTML(job.meals)}</p>
+      <p><b>Ferramentas:</b> ${escapeHTML(job.tools)}</p>
+    </div>
+
+    <div class="actions">
+
+      <a
+        class="btn primary"
+        href="${createMailto(job)}"
+        onclick='addToSent(${JSON.stringify(job)})'>
+        Generate email
+      </a>
+
+      <button
+        class="btn ok"
+        onclick='copyCompleteEmail(${JSON.stringify(job)})'>
+        Copy email
+      </button>
+
+    </div>
+
+  </article>`;
+}
+
+function renderJobs(){
+  const result=filteredJobs();
+
+  document.getElementById("resultCount").textContent=
+    result.length+" vaga(s) encontrada(s)";
+
+  document.getElementById("jobs").innerHTML=result.length
+    ? result.map(jobCard).join("")
+    : `<div class="empty">Nenhuma vaga encontrada.</div>`;
+}
+
+function renderSentJobs(){
+  const list=getSent();
+
+  document.getElementById("sentJobs").innerHTML=list.length
+    ? list.map(job=>`
+
+      <article class="job">
+
+        <div class="badges">
+          <span class="badge green">E-mail preparado</span>
+          <span class="badge">${job.type}</span>
+          <span class="badge">${job.state}</span>
+        </div>
+
+        <h2 class="title">${escapeHTML(job.title)}</h2>
+
+        <div class="company">
+          ${escapeHTML(job.company)}
+        </div>
+
+        <div class="meta">
+          📍 ${escapeHTML(job.city)}, ${job.state}<br>
+          Salário: ${money(job.salaryMin)} – ${money(job.salaryMax)}<br>
+          Adicionado em:
+          ${new Date(job.sentAt).toLocaleString("pt-BR")}
+        </div>
+
+        <div class="actions">
+
+          <a
+            class="btn primary"
+            href="${createMailto(job)}"
+            onclick='addToSent(${JSON.stringify(job)})'>
+            Open email
+          </a>
+
+          <button
+            class="btn danger"
+            onclick="removeSent(${job.id})">
+            Remover
+          </button>
+
+        </div>
+
+      </article>
+    `).join("")
+    : `<div class="empty">Nenhuma vaga enviada ainda.</div>`;
+}
+
+function removeSent(id){
+  const list=getSent()
+    .filter(job=>job.id!==id);
+
+  saveSent(list);
+  renderSentJobs();
+  showToast("Vaga removida");
+}
+
+function clearSent(){
+  if(confirm("Limpar todo o histórico de enviados?")){
+    saveSent([]);
+    renderSentJobs();
+    showToast("Histórico limpo");
+  }
+}
+
+function initialize(){
+  const states=[...new Set(jobs.map(job=>job.state))].sort();
+
+  document.getElementById("state").innerHTML=
+    `<option value="">Todos os estados</option>`+
+    states.map(state=>`<option value="${state}">${state}</option>`).join("");
+
+  updateSentBadge();
+  renderJobs();
+  renderSentJobs();
+}
+
+initialize();
+</script>
+
+</body>
+</html>
