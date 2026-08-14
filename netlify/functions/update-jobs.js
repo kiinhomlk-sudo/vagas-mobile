@@ -207,10 +207,14 @@ function normalizeJob(raw, source) {
 }
 
 async function readFeed(feed) {
-  const response = await fetch(feed.url);
+  const response = await fetch(feed.url, {
+    headers: {
+      "Accept": "application/json"
+    }
+  });
 
   if (!response.ok) {
-    throw new Error(`Feed failed: ${feed.name}`);
+    throw new Error(`Feed failed: ${feed.name} (${response.status})`);
   }
 
   const data = await response.json();
@@ -257,9 +261,9 @@ exports.handler = async function() {
   };
 
   const store = getStore("vagas-mobile-data", {
-  siteID: process.env.NETLIFY_SITE_ID,
-  token: process.env.NETLIFY_AUTH_TOKEN
-});
+    siteID: process.env.NETLIFY_SITE_ID,
+    token: process.env.NETLIFY_AUTH_TOKEN
+  });
 
   await store.setJSON("jobs", output);
 
