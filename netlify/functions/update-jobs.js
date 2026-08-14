@@ -256,7 +256,10 @@ exports.handler = async function() {
     jobs: Array.from(unique.values())
   };
 
-  const store = getStore("vagas-mobile-data");
+  const store = getStore("vagas-mobile-data", {
+  siteID: process.env.NETLIFY_SITE_ID,
+  token: process.env.NETLIFY_AUTH_TOKEN
+});
 
   await store.setJSON("jobs", output);
 
