@@ -497,122 +497,8 @@ input:focus,select:focus{
 const STORAGE_SENT="vagas_enviadas_v2";
 const STORAGE_FAVORITES="vagas_favoritas_v2";
 
-const jobs=[
-  {
-    id:1,
-    title:"Agricultural Equipment Operator",
-    company:"Green Valley Farms",
-    city:"Immokalee",
-    state:"FL",
-    type:"H-2A",
-    salaryMin:18,
-    salaryMax:22,
-    posted:"2026-08-10",
-    start:"2026-09-01",
-    end:"2027-06-30",
-    hours:"40 h/semana",
-    workers:"8 vagas",
-    experience:"Não informado",
-    housing:"Disponível conforme a oferta",
-    transport:"Transporte local",
-    meals:"Não informado",
-    tools:"Fornecidas",
-    email:"hr@greenvalleyfarms.example",
-    description:"Operação de máquinas agrícolas, manutenção básica e apoio à colheita."
-  },
+let jobs=[];
 
-  {
-    id:2,
-    title:"Harvest Worker",
-    company:"Sunrise Produce",
-    city:"Yakima",
-    state:"WA",
-    type:"H-2A",
-    salaryMin:17,
-    salaryMax:20,
-    posted:"2026-08-08",
-    start:"2026-09-15",
-    end:"2026-11-20",
-    hours:"35 h/semana",
-    workers:"20 vagas",
-    experience:"Desejável",
-    housing:"Moradia indicada",
-    transport:"Entre moradia e fazenda",
-    meals:"Cozinha disponível",
-    tools:"Fornecidas",
-    email:"jobs@sunriseproduce.example",
-    description:"Colheita, triagem e embalagem de produtos agrícolas."
-  },
-
-  {
-    id:3,
-    title:"Landscape Laborer",
-    company:"Blue River Services",
-    city:"Raleigh",
-    state:"NC",
-    type:"H-2B",
-    salaryMin:16,
-    salaryMax:19,
-    posted:"2026-08-05",
-    start:"2026-10-01",
-    end:"2027-04-30",
-    hours:"40 h/semana",
-    workers:"6 vagas",
-    experience:"Não exigida",
-    housing:"Não informado",
-    transport:"Não informado",
-    meals:"Não informado",
-    tools:"Fornecidas",
-    email:"careers@blueriverservices.example",
-    description:"Manutenção de áreas externas, plantio, poda e limpeza."
-  },
-
-  {
-    id:4,
-    title:"Truck Driver Farm Support",
-    company:"Prairie Logistics",
-    city:"Lubbock",
-    state:"TX",
-    type:"H-2A",
-    salaryMin:20,
-    salaryMax:25,
-    posted:"2026-08-12",
-    start:"2026-09-05",
-    end:"2027-01-15",
-    hours:"40 h/semana",
-    workers:"4 vagas",
-    experience:"Carteira recomendada",
-    housing:"Não informado",
-    transport:"Relacionado ao trabalho",
-    meals:"Não informado",
-    tools:"Veículo fornecido",
-    email:"apply@prairielogistics.example",
-    description:"Transporte interno, logística e movimentação de cargas."
-  },
-
-  {
-    id:5,
-    title:"Greenhouse Worker",
-    company:"FreshLeaf Growers",
-    city:"Homestead",
-    state:"FL",
-    type:"H-2A",
-    salaryMin:17,
-    salaryMax:21,
-    posted:"2026-08-11",
-    start:"2026-09-10",
-    end:"2027-02-28",
-    hours:"40 h/semana",
-    workers:"12 vagas",
-    experience:"Não exigida",
-    housing:"Possível conforme a oferta",
-    transport:"Não informado",
-    meals:"Não informado",
-    tools:"Equipamentos básicos",
-    email:"hello@freshleafgrowers.example",
-    description:"Cuidados com estufa, irrigação e seleção de mudas."
-  }
-];
 
 const money=value=>"$"+Number(value).toFixed(2)+"/h";
 
@@ -995,7 +881,54 @@ function initialize(){
   renderSentJobs();
 }
 
-initialize();
+async function loadJobs(){
+  const container=document.getElementById("jobs");
+
+  container.innerHTML=
+    `<div class="empty">Carregando vagas atualizadas...</div>`;
+
+  try{
+    const response=await fetch("jobs.json?time="+Date.now());
+
+    if(!response.ok){
+      throw new Error("jobs.json não encontrado");
+    }
+
+    const data=await response.json();
+
+    jobs=Array.isArray(data)
+      ? data
+      : data.jobs || [];
+
+    updateStateOptions();
+    renderJobs();
+  }catch(error){
+    container.innerHTML=
+      `<div class="empty">
+        Não foi possível carregar as vagas atualizadas.
+        <br><br>
+        Aguarde o primeiro processamento do Netlify.
+      </div>`;
+  }
+}
+
+function updateStateOptions(){
+  const states=[
+    ...new Set(
+      jobs
+        .map(job=>job.state)
+        .filter(Boolean)
+    )
+  ].sort();
+
+  document.getElementById("state").innerHTML=
+    `<option value="">Todos os estados</option>`+
+    states.map(state=>
+      `<option value="${state}">${state}</option>`
+    ).join("");
+}
+
+loadJobs();
 </script>
 
 </body>
