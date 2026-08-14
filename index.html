@@ -888,7 +888,9 @@ async function loadJobs(){
     `<div class="empty">Carregando vagas atualizadas...</div>`;
 
   try{
-    const response=await fetch("/.netlify/functions/jobs?time="+Date.now());
+    const response=await fetch(
+  "/.netlify/functions/jobs?time="+Date.now()
+);
 
     if(!response.ok){
       throw new Error("jobs.json não encontrado");
