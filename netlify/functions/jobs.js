@@ -2,7 +2,10 @@ const { getStore } = require("@netlify/blobs");
 
 exports.handler = async function() {
   try {
-    const store = getStore("vagas-mobile-data");
+    const store = getStore("vagas-mobile-data", {
+  siteID: process.env.NETLIFY_SITE_ID,
+  token: process.env.NETLIFY_AUTH_TOKEN
+});
     const data = await store.get("jobs", { type: "json" });
 
     if (!data) {
