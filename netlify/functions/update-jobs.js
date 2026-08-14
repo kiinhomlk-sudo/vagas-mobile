@@ -1,3 +1,5 @@
+const { getStore } = require("@netlify/blobs");
+
 const FEEDS = [
   {
     name: "H-2A Job Orders",
@@ -105,6 +107,7 @@ function normalizeJob(raw, source) {
     city,
     state,
     type,
+
     salaryMin: salaryMin || salaryMax || 0,
     salaryMax: salaryMax || salaryMin || 0,
 
@@ -253,11 +256,20 @@ exports.handler = async function() {
     jobs: Array.from(unique.values())
   };
 
+  const store = getStore("vagas-mobile-data");
+
+  await store.setJSON("jobs", output);
+
   return {
     statusCode: errors.length && !output.jobs.length ? 500 : 200,
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify(output)
+    body: JSON.stringify({
+      saved: true,
+      updatedAt: output.updatedAt,
+      total: output.total,
+      errors: output.errors
+    })
   };
 };
