@@ -1,6 +1,7 @@
-import { unzipSync, strFromU8 } from "fflate";
+import { unzipSync, strFromU8 } from
+  "https://cdn.jsdelivr.net/npm/fflate@0.8.2/esm/browser.js";
 
-const SEASONALJOBS_BASE =
+const FEED_BASE =
   "https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/jo/";
 
 export default {
@@ -8,21 +9,21 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === "/jobs") {
-      return loadSeasonalJobs();
+      return await getJobs();
     }
 
     return env.ASSETS.fetch(request);
   }
 };
 
-async function loadSeasonalJobs() {
-  const date = getEasternDate();
-  const feedUrl = SEASONALJOBS_BASE + date;
+async function getJobs() {
+  const date = getDate();
+  const source = FEED_BASE + date;
 
   try {
-    const response = await fetch(feedUrl, {
+    const response = await fetch(source, {
       headers: {
-        "Accept": "application/zip, application/octet-stream, */*",
+        "Accept": "application/zip, application/octet-stream",
         "User-Agent": "vagas-mobile-site1"
       }
     });
@@ -33,52 +34,195 @@ async function loadSeasonalJobs() {
       );
     }
 
-    const zipBytes = new Uint8Array(
+    const bytes = new Uint8Array(
       await response.arrayBuffer()
     );
 
-    const files = unzipSync(zipBytes);
+    const files = unzipSync(bytes);
     const records = [];
+    const fileNames = Object.keys(files);
 
-    for (const [filename, fileBytes] of Object.entries(files)) {
-      const lowerName = filename.toLowerCase();
+    for (const fileName of fileNames) {
+      const lower = fileName.toLowerCase();
 
       if (
-        lowerName.endsWith(".json") ||
-        lowerName.endsWith(".jsonl")
+        lower.endsWith(".json") ||
+        lower.endsWith(".jsonl")
       ) {
-        const text = strFromU8(fileBytes);
-        records.push(...parseRecords(text));
+        const text = strFromU8(files[fileName]);
+        records.push(...readRecords(text));
       }
     }
 
-    const jobs = records
-      .map((item, index) => normalizeJob(item, index))
-      .filter(job => job.title || job.company);
+    const jobs = records.map((item, index) => ({
+      id: String(
+        item.case_number ||
+        item.caseNumber ||
+        item.job_order_number ||
+        item.jobOrderNumber ||
+        item.id ||
+        index + 1
+      ),
 
-    return jsonResponse({
+      title: String(
+        item.job_title ||
+        item.jobTitle ||
+        item.title ||
+        "Vaga sazonal"
+      ),
+
+      company: String(
+        item.employer_name ||
+        item.employerName ||
+        item.employer ||
+        item.company ||
+        "Empregador não informado"
+      ),
+
+      city: String(
+        item.worksite_city ||
+        item.worksiteCity ||
+        item.city ||
+        "Local não informado"
+      ),
+
+      state: String(
+        item.worksite_state ||
+        item.worksiteState ||
+        item.state ||
+        ""
+      ),
+
+      type: "H-2A",
+
+      salaryMin: Number(
+        item.wage_rate_from ||
+        item.wageRateFrom ||
+        item.wage_from ||
+        item.wageFrom ||
+        0
+      ),
+
+      salaryMax: Number(
+        item.wage_rate_to ||
+        item.wageRateTo ||
+        item.wage_to ||
+        item.wageTo ||
+        item.wage_rate_from ||
+        0
+      ),
+
+      posted: String(
+        item.date_posted ||
+        item.datePosted ||
+        item.posted_date ||
+        ""
+      ),
+
+      start: String(
+        item.employment_start_date ||
+        item.employmentStartDate ||
+        item.start_date ||
+        ""
+      ),
+
+      end: String(
+        item.employment_end_date ||
+        item.employmentEndDate ||
+        item.end_date ||
+        ""
+      ),
+
+      hours: String(
+        item.hours_per_week ||
+        item.hoursPerWeek ||
+        item.hours ||
+        "Não informado"
+      ),
+
+      workers: String(
+        item.workers_needed ||
+        item.workersNeeded ||
+        item.number_of_workers ||
+        "Não informado"
+      ),
+
+      experience: String(
+        item.experience_required ||
+        item.experienceRequired ||
+        item.experience ||
+        "Não informado"
+      ),
+
+      housing: String(
+        item.housing ||
+        item.housing_provided ||
+        item.housingProvided ||
+        "Não informado"
+      ),
+
+      transport: String(
+        item.transportation ||
+        item.transport ||
+        item.transportation_provided ||
+        "Não informado"
+      ),
+
+      meals: String(
+        item.meals ||
+        item.meals_provided ||
+        "Não informado"
+      ),
+
+      tools: String(
+        item.tools ||
+        item.tools_provided ||
+        "Não informado"
+      ),
+
+      email: String(
+        item.contact_email ||
+        item.contactEmail ||
+        item.email ||
+        ""
+      ),
+
+      description: String(
+        item.job_description ||
+        item.jobDescription ||
+        item.description ||
+        item.job_duties ||
+        "Descrição não informada"
+      ),
+
+      originalUrl: String(
+        item.url ||
+        item.job_url ||
+        item.jobUrl ||
+        ""
+      )
+    }));
+
+    return json({
       updatedAt: new Date().toISOString(),
-      source: feedUrl,
-      zipFiles: Object.keys(files),
+      source,
+      files: fileNames,
       sourceRecords: records.length,
       total: jobs.length,
       jobs
     });
 
   } catch (error) {
-    return jsonResponse(
-      {
-        error: "Não foi possível carregar as vagas do SeasonalJobs.",
-        details: error.message,
-        source: feedUrl,
-        jobs: []
-      },
-      502
-    );
+    return json({
+      error: "Não foi possível carregar as vagas do SeasonalJobs.",
+      details: error.message,
+      source,
+      jobs: []
+    }, 502);
   }
 }
 
-function getEasternDate() {
+function getDate() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York",
     year: "numeric",
@@ -87,33 +231,32 @@ function getEasternDate() {
   }).format(new Date());
 }
 
-function parseRecords(text) {
-  const trimmed = text.trim();
+function readRecords(text) {
+  const value = text.trim();
 
-  if (!trimmed) {
+  if (!value) {
     return [];
   }
 
   try {
-    const parsed = JSON.parse(trimmed);
+    const parsed = JSON.parse(value);
 
     if (Array.isArray(parsed)) {
       return parsed;
     }
 
     if (parsed && typeof parsed === "object") {
-      for (const value of Object.values(parsed)) {
-        if (Array.isArray(value)) {
-          return value;
+      for (const item of Object.values(parsed)) {
+        if (Array.isArray(item)) {
+          return item;
         }
       }
 
       return [parsed];
     }
   } catch {
-    return trimmed
+    return value
       .split(/\r?\n/)
-      .map(line => line.trim())
       .filter(Boolean)
       .map(line => {
         try {
@@ -128,210 +271,7 @@ function parseRecords(text) {
   return [];
 }
 
-function firstValue(item, keys, fallback = "") {
-  for (const key of keys) {
-    const value = item?.[key];
-
-    if (
-      value !== undefined &&
-      value !== null &&
-      String(value).trim() !== ""
-    ) {
-      return value;
-    }
-  }
-
-  return fallback;
-}
-
-function numberValue(value, fallback = 0) {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : fallback;
-  }
-
-  const normalized = String(value ?? "")
-    .replace("$", "")
-    .replace(",", ".")
-    .trim();
-
-  const number = Number(normalized);
-
-  return Number.isFinite(number) ? number : fallback;
-}
-
-function normalizeJob(item, index) {
-  const title = firstValue(item, [
-    "job_title",
-    "jobTitle",
-    "title",
-    "occupation_title",
-    "occupationTitle",
-    "job_order_title",
-    "jobOrderTitle"
-  ], "Vaga sazonal");
-
-  const company = firstValue(item, [
-    "employer_name",
-    "employerName",
-    "employer",
-    "company",
-    "employer_business_name",
-    "employerBusinessName"
-  ], "Empregador não informado");
-
-  const city = firstValue(item, [
-    "worksite_city",
-    "worksiteCity",
-    "city",
-    "area_of_employment",
-    "areaOfEmployment"
-  ], "Local não informado");
-
-  const state = firstValue(item, [
-    "worksite_state",
-    "worksiteState",
-    "state",
-    "state_code",
-    "stateCode"
-  ], "");
-
-  const salaryMin = numberValue(firstValue(item, [
-    "wage_rate_from",
-    "wageRateFrom",
-    "wage_from",
-    "wageFrom",
-    "min_wage",
-    "minWage",
-    "salary_min",
-    "salaryMin",
-    "minimum_wage",
-    "minimumWage"
-  ]));
-
-  const salaryMax = numberValue(firstValue(item, [
-    "wage_rate_to",
-    "wageRateTo",
-    "wage_to",
-    "wageTo",
-    "max_wage",
-    "maxWage",
-    "salary_max",
-    "salaryMax",
-    "maximum_wage",
-    "maximumWage"
-  ]), salaryMin);
-
-  return {
-    id: String(firstValue(item, [
-      "case_number",
-      "caseNumber",
-      "job_order_number",
-      "jobOrderNumber",
-      "job_id",
-      "jobId",
-      "id"
-    ], index + 1)),
-
-    title: String(title),
-    company: String(company),
-    city: String(city),
-    state: String(state),
-    type: "H-2A",
-    salaryMin,
-    salaryMax,
-
-    posted: String(firstValue(item, [
-      "date_posted",
-      "datePosted",
-      "posted_date",
-      "posting_date"
-    ], "")),
-
-    start: String(firstValue(item, [
-      "employment_start_date",
-      "employmentStartDate",
-      "start_date",
-      "startDate"
-    ], "")),
-
-    end: String(firstValue(item, [
-      "employment_end_date",
-      "employmentEndDate",
-      "end_date",
-      "endDate"
-    ], "")),
-
-    hours: String(firstValue(item, [
-      "hours_per_week",
-      "hoursPerWeek",
-      "hours"
-    ], "Não informado")),
-
-    workers: String(firstValue(item, [
-      "workers_needed",
-      "workersNeeded",
-      "number_of_workers",
-      "numberOfWorkers"
-    ], "Não informado")),
-
-    experience: String(firstValue(item, [
-      "experience_required",
-      "experienceRequired",
-      "experience"
-    ], "Não informado")),
-
-    housing: String(firstValue(item, [
-      "housing",
-      "housing_provided",
-      "housingProvided"
-    ], "Não informado")),
-
-    transport: String(firstValue(item, [
-      "transportation",
-      "transport",
-      "transportation_provided",
-      "transportationProvided"
-    ], "Não informado")),
-
-    meals: String(firstValue(item, [
-      "meals",
-      "meals_provided",
-      "mealsProvided"
-    ], "Não informado")),
-
-    tools: String(firstValue(item, [
-      "tools",
-      "tools_provided",
-      "toolsProvided"
-    ], "Não informado")),
-
-    email: String(firstValue(item, [
-      "contact_email",
-      "contactEmail",
-      "email",
-      "employer_email",
-      "employerEmail"
-    ], "")),
-
-    description: String(firstValue(item, [
-      "job_description",
-      "jobDescription",
-      "description",
-      "job_duties",
-      "jobDuties"
-    ], "Descrição não informada")),
-
-    originalUrl: String(firstValue(item, [
-      "url",
-      "job_url",
-      "jobUrl",
-      "details_url",
-      "detailsUrl"
-    ], ""))
-  };
-}
-
-function jsonResponse(data, status = 200) {
+function json(data, status = 200) {
   return new Response(
     JSON.stringify(data, null, 2),
     {
