@@ -1,3 +1,5 @@
+import { unzipSync, strFromU8 } from "fflate";
+
 const SEASONALJOBS_BASE =
   "https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/jo/";
 
@@ -14,12 +16,10 @@ export default {
 };
 
 async function loadSeasonalJobs() {
+  const date = getEasternDate();
+  const feedUrl = SEASONALJOBS_BASE + date;
+
   try {
-    const date = getEasternDate();
-
-    const feedUrl =
-      SEASONALJOBS_BASE + date;
-
     const response = await fetch(feedUrl, {
       headers: {
         "Accept": "application/zip, application/octet-stream, */*",
@@ -33,20 +33,21 @@ async function loadSeasonalJobs() {
       );
     }
 
-    const zipBuffer = await response.arrayBuffer();
+    const zipBytes = new Uint8Array(
+      await response.arrayBuffer()
+    );
 
-    const zip = await unzip(zipBuffer);
-
+    const files = unzipSync(zipBytes);
     const records = [];
 
-    for (const file of zip) {
-      const name = file.name.toLowerCase();
+    for (const [filename, fileBytes] of Object.entries(files)) {
+      const lowerName = filename.toLowerCase();
 
       if (
-        name.endsWith(".json") ||
-        name.endsWith(".jsonl")
+        lowerName.endsWith(".json") ||
+        lowerName.endsWith(".jsonl")
       ) {
-        const text = await file.text();
+        const text = strFromU8(fileBytes);
         records.push(...parseRecords(text));
       }
     }
@@ -58,6 +59,7 @@ async function loadSeasonalJobs() {
     return jsonResponse({
       updatedAt: new Date().toISOString(),
       source: feedUrl,
+      zipFiles: Object.keys(files),
       sourceRecords: records.length,
       total: jobs.length,
       jobs
@@ -68,6 +70,7 @@ async function loadSeasonalJobs() {
       {
         error: "Não foi possível carregar as vagas do SeasonalJobs.",
         details: error.message,
+        source: feedUrl,
         jobs: []
       },
       502
@@ -84,20 +87,6 @@ function getEasternDate() {
   }).format(new Date());
 }
 
-async function unzip(buffer) {
-  const blob = new Blob([buffer]);
-
-  if (!("DecompressionStream" in globalThis)) {
-    throw new Error(
-      "Este Worker não possui suporte nativo para ZIP."
-    );
-  }
-
-  throw new Error(
-    "O arquivo recebido é ZIP e precisa ser processado com uma biblioteca ZIP."
-  );
-}
-
 function parseRecords(text) {
   const trimmed = text.trim();
 
@@ -106,20 +95,20 @@ function parseRecords(text) {
   }
 
   try {
-    const json = JSON.parse(trimmed);
+    const parsed = JSON.parse(trimmed);
 
-    if (Array.isArray(json)) {
-      return json;
+    if (Array.isArray(parsed)) {
+      return parsed;
     }
 
-    if (json && typeof json === "object") {
-      for (const value of Object.values(json)) {
+    if (parsed && typeof parsed === "object") {
+      for (const value of Object.values(parsed)) {
         if (Array.isArray(value)) {
           return value;
         }
       }
 
-      return [json];
+      return [parsed];
     }
   } catch {
     return trimmed
