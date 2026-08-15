@@ -1,12 +1,24 @@
 [
   {
-    "id": "1",
-    "title": "Trabalhador agrícola",
-    "employer": "Exemplo Farm",
-    "location": "Florida, USA",
-    "openings": 10,
-    "startDate": "2026-09-01",
-    "endDate": "2027-01-15",
-    "wage": "$15 por hora"
+    "id": 1,
+    "title": "Agricultural Equipment Operator",
+    "company": "Green Valley Farms",
+    "city": "Immokalee",
+    "state": "FL",
+    "type": "H-2A",
+    "salaryMin": 18,
+    "salaryMax": 22,
+    "posted": "2026-08-10",
+    "start": "2026-09-01",
+    "end": "2027-06-30",
+    "hours": "40 h/semana",
+    "workers": "8 vagas",
+    "experience": "Não informado",
+    "housing": "Disponível conforme a oferta",
+    "transport": "Transporte local",
+    "meals": "Não informado",
+    "tools": "Fornecidas",
+    "email": "hr@greenvalleyfarms.example",
+    "description": "Operação de máquinas agrícolas, manutenção básica e apoio à colheita."
   }
 ]
