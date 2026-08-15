@@ -2,8 +2,10 @@
   "name": "vagas-mobile",
   "version": "1.0.0",
   "private": true,
-  "dependencies": {
-    "@netlify/blobs": "^10.0.0",
-    "adm-zip": "^0.5.16"
+  "scripts": {
+    "deploy": "wrangler deploy --assets=."
+  },
+  "devDependencies": {
+    "wrangler": "^4.123.0"
   }
 }
