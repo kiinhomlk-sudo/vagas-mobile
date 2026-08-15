@@ -1048,57 +1048,68 @@ ${body}`
     }
 
     async function loadJobs() {
-      const container = document.getElementById("jobs");
+  const container = document.getElementById("jobs");
 
-      container.innerHTML =
-        `<div class="empty">Carregando vagas atualizadas...</div>`;
+  container.innerHTML =
+    `<div class="empty">Carregando vagas oficiais...</div>`;
 
-      try {
-        const response = await fetch(
-          "/jobs?time=" + Date.now(),
-          {
-            cache: "no-store"
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Arquivo jobs.json indisponível");
-        }
-
-        const data = await response.json();
-
-        jobs = Array.isArray(data)
-          ? data
-          : data.jobs || [];
-
-        updateStateOptions();
-        renderJobs();
-
-        const updated = data.updatedAt
-          ? new Date(data.updatedAt).toLocaleString("pt-BR")
-          : "agora";
-
-        document.getElementById("resultCount").textContent =
-          `${jobs.length} vaga(s). Atualizado em ${updated}`;
-
-      } catch (error) {
-        console.error(error);
-
-        jobs = [];
-
-        document.getElementById("resultCount").textContent =
-          "Não foi possível atualizar";
-
-        container.innerHTML =
-          `<div class="empty">
-            Não foi possível carregar as vagas.
-            <br><br>
-            Verifique se o arquivo
-            <b>public/jobs.json</b>
-            existe e está em formato JSON válido.
-          </div>`;
+  try {
+    const response = await fetch(
+      "/jobs?time=" + Date.now(),
+      {
+        cache: "no-store"
       }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.details ||
+        data.error ||
+        "Rota /jobs indisponível"
+      );
     }
+
+    jobs = Array.isArray(data)
+      ? data
+      : Array.isArray(data.jobs)
+        ? data.jobs
+        : [];
+
+    updateStateOptions();
+    renderJobs();
+
+    const total = Number.isFinite(Number(data.total))
+      ? Number(data.total)
+      : jobs.length;
+
+    const updated = data.updatedAt
+      ? new Date(data.updatedAt).toLocaleString("pt-BR")
+      : "agora";
+
+    document.getElementById("resultCount").textContent =
+      `${total} vaga(s). Atualizado em ${updated}`;
+
+  } catch (error) {
+    console.error("Erro ao carregar vagas:", error);
+
+    jobs = [];
+
+    updateStateOptions();
+    renderJobs();
+
+    document.getElementById("resultCount").textContent =
+      "Erro ao atualizar vagas";
+
+    container.innerHTML =
+      `<div class="empty">
+        Não foi possível carregar as vagas oficiais.
+        <br><br>
+        <small>${escapeHTML(error.message)}</small>
+      </div>`;
+  }
+}
 
     initialize();
     loadJobs();
