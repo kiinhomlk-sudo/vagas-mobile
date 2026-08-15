@@ -3,15 +3,15 @@ const { getStore } = require("@netlify/blobs");
 const FEEDS = [
   {
     name: "H-2A Job Orders",
-    url: "https://seasonaljobs.dol.gov/feeds/790.json"
+    url: "https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/jo/2026-08-14"
   },
   {
     name: "H-2A Applications",
-    url: "https://seasonaljobs.dol.gov/feeds/9142A.json"
+    url: "https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/h2a/2026-08-14"
   },
   {
     name: "H-2B Applications",
-    url: "https://seasonaljobs.dol.gov/feeds/9142B.json"
+    url: "https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/h2b/2026-08-14"
   }
 ];
 
