@@ -1,20 +1,24 @@
 const { getStore } = require("@netlify/blobs");
 const AdmZip = require("adm-zip");
+function todayUTC() {
+  return new Date().toISOString().slice(0, 10);
+}
+const date = todayUTC();
+
 const FEEDS = [
   {
     name: "H-2A Job Orders",
-    url: "https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/jo/2026-08-14"
+    url: `https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/jo/${date}`
   },
   {
     name: "H-2A Applications",
-    url: "https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/h2a/2026-08-14"
+    url: `https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/h2a/${date}`
   },
   {
     name: "H-2B Applications",
-    url: "https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/h2b/2026-08-14"
+    url: `https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/h2b/${date}`
   }
 ];
-
 function first(object, keys, fallback = "") {
   for (const key of keys) {
     if (
