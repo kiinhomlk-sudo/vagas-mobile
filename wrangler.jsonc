@@ -1,14 +1,19 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "vagas-mobile-site1",
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "seasonaljobs-worker",
   "main": "src/index.js",
   "compatibility_date": "2026-08-15",
-  "workers_dev": true,
-  "assets": {
-    "binding": "ASSETS",
-    "directory": "./public",
-    "run_worker_first": [
-      "/jobs"
+
+  "kv_namespaces": [
+    {
+      "binding": "JOBS",
+      "id": "COLOQUE_O_ID_DO_SEU_KV_AQUI"
+    }
+  ],
+
+  "triggers": {
+    "crons": [
+      "0 5 * * *"
     ]
   }
 }
