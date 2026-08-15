@@ -8,7 +8,29 @@
 </head>
 
 <body>
-  
+  <script>
+  async function carregarVagas() {
+    const lista = document.getElementById("lista-vagas");
+
+    try {
+      const resposta = await fetch("/jobs.json");
+      const vagas = await resposta.json();
+
+      lista.innerHTML = vagas.map(vaga => `
+        <article>
+          <h2>${vaga.title}</h2>
+          <p>Empresa: ${vaga.employer}</p>
+          <p>Local: ${vaga.location}</p>
+          <p>Salário: ${vaga.wage}</p>
+        </article>
+      `).join("");
+    } catch (erro) {
+      lista.innerHTML = "<p>Erro ao carregar vagas.</p>";
+    }
+  }
+
+  carregarVagas();
+</script>
 </body>
 
 </html><!doctype html>
