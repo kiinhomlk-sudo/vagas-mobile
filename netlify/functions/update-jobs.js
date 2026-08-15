@@ -152,28 +152,36 @@ function normalizeJob(raw, source) {
 }
 
 async function readFeed(feed) {
-  const response = await fetch(feed.url, {
-    headers: {
-      "Accept": "application/json"
-    }
-  });
+  const response = await fetch(feed.url);
 
   if (!response.ok) {
     throw new Error(`Feed failed: ${feed.name} (${response.status})`);
   }
 
-  const data = await response.json();
+  const arrayBuffer = await response.arrayBuffer();
+  const zip = new AdmZip(Buffer.from(arrayBuffer));
+  const entries = zip.getEntries();
+
+  const jsonEntry = entries.find(entry =>
+    entry.entryName.toLowerCase().endsWith(".json")
+  );
+
+  if (!jsonEntry) {
+    throw new Error(`JSON não encontrado dentro do ZIP: ${feed.name}`);
+  }
+
+  const text = jsonEntry.getData().toString("utf8");
+  const data = JSON.parse(text);
 
   const records = Array.isArray(data)
     ? data
     : data.jobs || data.results || data.data || data.items || [];
 
-  return records.filter(
-    record =>
-      record &&
-      typeof record === "object" &&
-      !Array.isArray(record) &&
-      record.caseNumber
+  return records.filter(record =>
+    record &&
+    typeof record === "object" &&
+    !Array.isArray(record) &&
+    record.caseNumber
   );
 }
 
