@@ -17,9 +17,15 @@ async function loadSeasonalJobs() {
   try {
     const response = await fetch(SEASONALJOBS_FEED, {
       headers: {
-        "Accept": "application/json"
+        "Accept": "application/json, text/plain, */*",
+        "User-Agent": "vagas-mobile-site1"
       }
     });
+
+    const contentType =
+      response.headers.get("content-type") || "";
+
+    const body = await response.text();
 
     if (!response.ok) {
       throw new Error(
@@ -27,7 +33,21 @@ async function loadSeasonalJobs() {
       );
     }
 
-    const source = await response.json();
+    let source;
+
+    try {
+      source = JSON.parse(body);
+    } catch {
+      return jsonResponse(
+        {
+          error: "O feed não retornou JSON válido.",
+          contentType,
+          preview: body.slice(0, 500),
+          jobs: []
+        },
+        502
+      );
+    }
 
     const records = extractRecords(source);
 
@@ -38,6 +58,9 @@ async function loadSeasonalJobs() {
     return jsonResponse({
       updatedAt: new Date().toISOString(),
       source: SEASONALJOBS_FEED,
+      contentType,
+      sourceFormat: describeFormat(source),
+      sourceRecords: records.length,
       total: jobs.length,
       jobs
     });
@@ -47,6 +70,7 @@ async function loadSeasonalJobs() {
       {
         error: "Não foi possível carregar as vagas do SeasonalJobs.",
         details: error.message,
+        source: SEASONALJOBS_FEED,
         jobs: []
       },
       502
@@ -54,25 +78,54 @@ async function loadSeasonalJobs() {
   }
 }
 
+function describeFormat(source) {
+  if (Array.isArray(source)) {
+    return "array";
+  }
+
+  if (source && typeof source === "object") {
+    return {
+      objectKeys: Object.keys(source).slice(0, 30),
+      arrayKeys: Object.keys(source).filter(
+        key => Array.isArray(source[key])
+      )
+    };
+  }
+
+  return typeof source;
+}
+
 function extractRecords(source) {
   if (Array.isArray(source)) {
     return source;
   }
 
-  if (Array.isArray(source.jobs)) {
-    return source.jobs;
+  if (!source || typeof source !== "object") {
+    return [];
   }
 
-  if (Array.isArray(source.data)) {
-    return source.data;
+  const possibleKeys = [
+    "jobs",
+    "data",
+    "results",
+    "records",
+    "items",
+    "jobOrders",
+    "job_orders",
+    "offers",
+    "opportunities"
+  ];
+
+  for (const key of possibleKeys) {
+    if (Array.isArray(source[key])) {
+      return source[key];
+    }
   }
 
-  if (Array.isArray(source.results)) {
-    return source.results;
-  }
-
-  if (Array.isArray(source.records)) {
-    return source.records;
+  for (const value of Object.values(source)) {
+    if (Array.isArray(value)) {
+      return value;
+    }
   }
 
   return [];
@@ -116,7 +169,8 @@ function normalizeJob(item, index) {
     "title",
     "occupation_title",
     "occupationTitle",
-    "job_order_title"
+    "job_order_title",
+    "jobOrderTitle"
   ], "Vaga sazonal");
 
   const company = firstValue(item, [
@@ -124,39 +178,50 @@ function normalizeJob(item, index) {
     "employerName",
     "employer",
     "company",
-    "employer_business_name"
+    "employer_business_name",
+    "employerBusinessName"
   ], "Empregador não informado");
 
   const city = firstValue(item, [
     "worksite_city",
     "worksiteCity",
     "city",
-    "area_of_employment"
+    "area_of_employment",
+    "areaOfEmployment"
   ], "Local não informado");
 
   const state = firstValue(item, [
     "worksite_state",
     "worksiteState",
     "state",
-    "state_code"
+    "state_code",
+    "stateCode"
   ], "");
 
   const salaryMin = numberValue(firstValue(item, [
     "wage_rate_from",
     "wageRateFrom",
     "wage_from",
+    "wageFrom",
     "min_wage",
+    "minWage",
     "salary_min",
-    "minimum_wage"
+    "salaryMin",
+    "minimum_wage",
+    "minimumWage"
   ]));
 
   const salaryMax = numberValue(firstValue(item, [
     "wage_rate_to",
     "wageRateTo",
     "wage_to",
+    "wageTo",
     "max_wage",
+    "maxWage",
     "salary_max",
-    "maximum_wage"
+    "salaryMax",
+    "maximum_wage",
+    "maximumWage"
   ]), salaryMin);
 
   const id = String(firstValue(item, [
@@ -165,6 +230,7 @@ function normalizeJob(item, index) {
     "job_order_number",
     "jobOrderNumber",
     "job_id",
+    "jobId",
     "id"
   ], index + 1));
 
@@ -227,7 +293,8 @@ function normalizeJob(item, index) {
     transport: String(firstValue(item, [
       "transportation",
       "transport",
-      "transportation_provided"
+      "transportation_provided",
+      "transportationProvided"
     ], "Não informado")),
 
     meals: String(firstValue(item, [
@@ -246,7 +313,8 @@ function normalizeJob(item, index) {
       "contact_email",
       "contactEmail",
       "email",
-      "employer_email"
+      "employer_email",
+      "employerEmail"
     ], "")),
 
     description: String(firstValue(item, [
@@ -269,13 +337,13 @@ function normalizeJob(item, index) {
 
 function jsonResponse(data, status = 200) {
   return new Response(
-    JSON.stringify(data),
+    JSON.stringify(data, null, 2),
     {
       status,
       headers: {
         "Content-Type": "application/json; charset=utf-8",
         "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "public, max-age=900"
+        "Cache-Control": "no-store"
       }
     }
   );
