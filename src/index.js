@@ -1,5 +1,5 @@
-const SEASONALJOBS_FEED =
-  "https://seasonaljobs.dol.gov/feeds/790.json";
+const SEASONALJOBS_BASE =
+  "https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/jo/";
 
 export default {
   async fetch(request, env) {
@@ -15,17 +15,17 @@ export default {
 
 async function loadSeasonalJobs() {
   try {
-    const response = await fetch(SEASONALJOBS_FEED, {
+    const date = getEasternDate();
+
+    const feedUrl =
+      SEASONALJOBS_BASE + date;
+
+    const response = await fetch(feedUrl, {
       headers: {
-        "Accept": "application/json, text/plain, */*",
+        "Accept": "application/zip, application/octet-stream, */*",
         "User-Agent": "vagas-mobile-site1"
       }
     });
-
-    const contentType =
-      response.headers.get("content-type") || "";
-
-    const body = await response.text();
 
     if (!response.ok) {
       throw new Error(
@@ -33,23 +33,23 @@ async function loadSeasonalJobs() {
       );
     }
 
-    let source;
+    const zipBuffer = await response.arrayBuffer();
 
-    try {
-      source = JSON.parse(body);
-    } catch {
-      return jsonResponse(
-        {
-          error: "O feed não retornou JSON válido.",
-          contentType,
-          preview: body.slice(0, 500),
-          jobs: []
-        },
-        502
-      );
+    const zip = await unzip(zipBuffer);
+
+    const records = [];
+
+    for (const file of zip) {
+      const name = file.name.toLowerCase();
+
+      if (
+        name.endsWith(".json") ||
+        name.endsWith(".jsonl")
+      ) {
+        const text = await file.text();
+        records.push(...parseRecords(text));
+      }
     }
-
-    const records = extractRecords(source);
 
     const jobs = records
       .map((item, index) => normalizeJob(item, index))
@@ -57,9 +57,7 @@ async function loadSeasonalJobs() {
 
     return jsonResponse({
       updatedAt: new Date().toISOString(),
-      source: SEASONALJOBS_FEED,
-      contentType,
-      sourceFormat: describeFormat(source),
+      source: feedUrl,
       sourceRecords: records.length,
       total: jobs.length,
       jobs
@@ -70,7 +68,6 @@ async function loadSeasonalJobs() {
       {
         error: "Não foi possível carregar as vagas do SeasonalJobs.",
         details: error.message,
-        source: SEASONALJOBS_FEED,
         jobs: []
       },
       502
@@ -78,54 +75,65 @@ async function loadSeasonalJobs() {
   }
 }
 
-function describeFormat(source) {
-  if (Array.isArray(source)) {
-    return "array";
-  }
-
-  if (source && typeof source === "object") {
-    return {
-      objectKeys: Object.keys(source).slice(0, 30),
-      arrayKeys: Object.keys(source).filter(
-        key => Array.isArray(source[key])
-      )
-    };
-  }
-
-  return typeof source;
+function getEasternDate() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date());
 }
 
-function extractRecords(source) {
-  if (Array.isArray(source)) {
-    return source;
+async function unzip(buffer) {
+  const blob = new Blob([buffer]);
+
+  if (!("DecompressionStream" in globalThis)) {
+    throw new Error(
+      "Este Worker não possui suporte nativo para ZIP."
+    );
   }
 
-  if (!source || typeof source !== "object") {
+  throw new Error(
+    "O arquivo recebido é ZIP e precisa ser processado com uma biblioteca ZIP."
+  );
+}
+
+function parseRecords(text) {
+  const trimmed = text.trim();
+
+  if (!trimmed) {
     return [];
   }
 
-  const possibleKeys = [
-    "jobs",
-    "data",
-    "results",
-    "records",
-    "items",
-    "jobOrders",
-    "job_orders",
-    "offers",
-    "opportunities"
-  ];
+  try {
+    const json = JSON.parse(trimmed);
 
-  for (const key of possibleKeys) {
-    if (Array.isArray(source[key])) {
-      return source[key];
+    if (Array.isArray(json)) {
+      return json;
     }
-  }
 
-  for (const value of Object.values(source)) {
-    if (Array.isArray(value)) {
-      return value;
+    if (json && typeof json === "object") {
+      for (const value of Object.values(json)) {
+        if (Array.isArray(value)) {
+          return value;
+        }
+      }
+
+      return [json];
     }
+  } catch {
+    return trimmed
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        try {
+          return JSON.parse(line);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
   }
 
   return [];
@@ -224,18 +232,17 @@ function normalizeJob(item, index) {
     "maximumWage"
   ]), salaryMin);
 
-  const id = String(firstValue(item, [
-    "case_number",
-    "caseNumber",
-    "job_order_number",
-    "jobOrderNumber",
-    "job_id",
-    "jobId",
-    "id"
-  ], index + 1));
-
   return {
-    id,
+    id: String(firstValue(item, [
+      "case_number",
+      "caseNumber",
+      "job_order_number",
+      "jobOrderNumber",
+      "job_id",
+      "jobId",
+      "id"
+    ], index + 1)),
+
     title: String(title),
     company: String(company),
     city: String(city),
