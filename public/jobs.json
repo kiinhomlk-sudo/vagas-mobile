@@ -1,0 +1,12 @@
+[
+  {
+    "id": "1",
+    "title": "Trabalhador agrícola",
+    "employer": "Exemplo Farm",
+    "location": "Florida, USA",
+    "openings": 10,
+    "startDate": "2026-09-01",
+    "endDate": "2027-01-15",
+    "wage": "$15 por hora"
+  }
+]
