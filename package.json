@@ -1,11 +1,11 @@
 {
-  "name": "vagas-mobile",
-  "version": "1.0.0",
+  "name": "seasonaljobs-worker",
   "private": true,
-  "scripts": {
-    "deploy": "wrangler deploy --assets=."
+  "type": "module",
+  "dependencies": {
+    "fflate": "^0.8.2"
   },
   "devDependencies": {
-    "wrangler": "^4.123.0"
+    "wrangler": "^4.0.0"
   }
 }
