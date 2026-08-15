@@ -1055,7 +1055,7 @@ ${body}`
 
       try {
         const response = await fetch(
-          "/jobs.json?time=" + Date.now(),
+          "/jobs?time=" + Date.now(),
           {
             cache: "no-store"
           }
