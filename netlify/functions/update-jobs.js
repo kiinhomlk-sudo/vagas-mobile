@@ -42,165 +42,110 @@ function numberValue(value) {
 }
 
 function normalizeJob(raw, source) {
+  const type = source.includes("9142B") ? "H-2B" : "H-2A";
+
   const title = first(raw, [
-    "job_title",
     "jobTitle",
-    "occupation_title",
+    "job_title",
     "occupationTitle",
-    "title"
+    "occupation_title"
   ], "Seasonal job");
 
   const company = first(raw, [
-    "employer_name",
     "employerName",
-    "employer",
-    "company_name",
-    "company"
+    "employer_name",
+    "companyName",
+    "company_name"
   ], "Employer not specified");
 
-  const city = first(raw, [
-    "worksite_city",
-    "worksiteCity",
-    "city"
-  ]);
-
   const state = first(raw, [
-    "worksite_state",
+    "workState",
     "worksiteState",
+    "worksite_state",
     "state"
   ]);
 
-  const type = source.includes("9142B") ? "H-2B" : "H-2A";
+  const city = first(raw, [
+    "workCity",
+    "worksiteCity",
+    "worksite_city",
+    "city"
+  ]);
 
   const wage = numberValue(first(raw, [
-    "wage_rate",
     "wageRate",
-    "offered_wage",
+    "wage_rate",
     "offeredWage",
-    "wage"
+    "offered_wage"
   ]));
 
-  const salaryMin = numberValue(first(raw, [
-    "min_wage",
-    "minWage",
-    "wage_min",
-    "wageMin"
-  ], wage));
-
-  const salaryMax = numberValue(first(raw, [
-    "max_wage",
-    "maxWage",
-    "wage_max",
-    "wageMax"
-  ], wage || salaryMin));
-
   return {
-    id: first(raw, [
-      "case_number",
-      "caseNumber",
-      "job_order_number",
-      "jobOrderNumber"
-    ], `${type}-${company}-${title}-${city}-${state}`),
-
+    id: raw.caseNumber,
+    caseNumber: raw.caseNumber,
     title,
     company,
     city,
     state,
     type,
 
-    salaryMin: salaryMin || salaryMax || 0,
-    salaryMax: salaryMax || salaryMin || 0,
+    salaryMin: wage,
+    salaryMax: wage,
 
     posted: first(raw, [
-      "created_at",
-      "createdAt",
-      "posted_date",
+      "jobPostedDate",
+      "jobPosted",
       "postedDate",
-      "date_posted"
+      "createdAt"
     ]),
 
     start: first(raw, [
-      "job_start_date",
+      "jobBeginDate",
       "jobStartDate",
-      "start_date",
       "startDate"
     ]),
 
     end: first(raw, [
-      "job_end_date",
       "jobEndDate",
-      "end_date",
       "endDate"
     ]),
 
     hours: first(raw, [
-      "hours_per_week",
+      "jobHoursTotal",
       "hoursPerWeek",
       "hours"
     ], "Not informed"),
 
     workers: first(raw, [
-      "workers_needed",
-      "workersNeeded",
-      "number_of_workers",
-      "numberOfWorkers"
+      "jobWrksNeededH2a",
+      "jobWrksNeeded",
+      "workersNeeded"
     ], "Not informed"),
 
     experience: first(raw, [
-      "experience",
-      "experience_required",
-      "experienceRequired"
+      "jobExperience",
+      "experienceRequired",
+      "experience"
     ], "Not informed"),
 
     housing: first(raw, [
       "housing",
-      "housing_provided",
       "housingProvided"
     ], "Not informed"),
 
-    transport: first(raw, [
-      "transportation",
-      "transportation_provided",
-      "transportationProvided"
-    ], "Not informed"),
-
-    meals: first(raw, [
-      "meals",
-      "meals_provided",
-      "mealsProvided"
-    ], "Not informed"),
-
-    tools: first(raw, [
-      "tools",
-      "tools_provided",
-      "toolsProvided"
-    ], "Not informed"),
-
     email: first(raw, [
-      "employer_email",
       "employerEmail",
       "email"
     ]),
 
     description: first(raw, [
-      "job_description",
       "jobDescription",
       "description"
     ]),
 
-    caseNumber: first(raw, [
-      "case_number",
-      "caseNumber",
-      "job_order_number",
-      "jobOrderNumber"
-    ]),
-
     source,
     sourceUrl: first(raw, [
-      "job_url",
       "jobUrl",
       "url",
-      "detail_url",
       "detailUrl"
     ])
   };
@@ -219,13 +164,17 @@ async function readFeed(feed) {
 
   const data = await response.json();
 
-  if (Array.isArray(data)) return data;
+  const records = Array.isArray(data)
+    ? data
+    : data.jobs || data.results || data.data || data.items || [];
 
-  return data.jobs ||
-    data.results ||
-    data.data ||
-    data.items ||
-    [];
+  return records.filter(
+    record =>
+      record &&
+      typeof record === "object" &&
+      !Array.isArray(record) &&
+      record.caseNumber
+  );
 }
 
 exports.handler = async function() {
