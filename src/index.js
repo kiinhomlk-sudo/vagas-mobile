@@ -560,7 +560,9 @@ function parseJSON(text) {
 async function downloadFeed() {
   const today = new Date();
 
-  for (let offset = 0; offset <= 2; offset++) {
+  // Tenta uma janela maior porque o feed oficial
+  // representa os dados dos últimos 20 dias.
+  for (let offset = 0; offset <= 20; offset++) {
     const date = new Date(today);
 
     date.setUTCDate(
@@ -573,27 +575,42 @@ async function downloadFeed() {
     const url =
       `${DOL_FEED}/${dateString}`;
 
-    const response = await fetch(url, {
-      headers: {
-        "Accept": "*/*"
-      }
-    });
-
-    if (!response.ok) {
-      continue;
-    }
-
-    const bytes =
-      new Uint8Array(
-        await response.arrayBuffer()
-      );
-
-    /*
-     * O endpoint oficial retorna um ZIP.
-     * Não dependemos do Content-Type.
-     */
     try {
-      const files = unzipSync(bytes);
+      const response = await fetch(url, {
+        method: "GET",
+        redirect: "follow",
+        headers: {
+          "Accept": "application/zip, application/octet-stream, */*"
+        }
+      });
+
+      if (!response.ok) {
+        continue;
+      }
+
+      const bytes =
+        new Uint8Array(
+          await response.arrayBuffer()
+        );
+
+      if (bytes.length < 4) {
+        continue;
+      }
+
+      /*
+       * ZIP começa normalmente com:
+       * 50 4B 03 04
+       */
+      const isZip =
+        bytes[0] === 0x50 &&
+        bytes[1] === 0x4B;
+
+      if (!isZip) {
+        continue;
+      }
+
+      const files =
+        unzipSync(bytes);
 
       const records = [];
 
@@ -620,38 +637,22 @@ async function downloadFeed() {
         );
       }
 
-      if (records.length) {
+      if (records.length > 0) {
         return {
           records,
           sourceDate: dateString
         };
       }
-    } catch {
-      /*
-       * Se por algum motivo a resposta não for ZIP,
-       * tenta interpretar diretamente como JSON.
-       */
-      try {
-        const text =
-          new TextDecoder().decode(bytes);
-
-        const records =
-          parseJSON(text);
-
-        if (records.length) {
-          return {
-            records,
-            sourceDate: dateString
-          };
-        }
-      } catch {
-        // Continua tentando a próxima data.
-      }
+    } catch (error) {
+      console.error(
+        `Erro ao processar feed ${dateString}:`,
+        error
+      );
     }
   }
 
   throw new Error(
-    "Feed 790/790A não encontrado."
+    "Feed 790/790A não encontrado ou não contém registros válidos."
   );
 }
 /*
