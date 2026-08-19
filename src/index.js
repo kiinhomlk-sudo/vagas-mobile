@@ -598,16 +598,10 @@ async function debugFeed() {
    ========================================================= */
 
 async function downloadFeed() {
-  const today =
-    new Date();
+  const today = new Date();
 
-  for (
-    let offset = 0;
-    offset <= 30;
-    offset++
-  ) {
-    const date =
-      new Date(today);
+  for (let offset = 0; offset <= 20; offset++) {
+    const date = new Date(today);
 
     date.setUTCDate(
       date.getUTCDate() - offset
@@ -620,14 +614,13 @@ async function downloadFeed() {
       `${DOL_FEED}/${dateString}`;
 
     try {
-      const response =
-        await fetch(url, {
-          method: "GET",
-          redirect: "follow",
-          headers: {
-            "Accept": "*/*"
-          }
-        });
+      const response = await fetch(url, {
+        method: "GET",
+        redirect: "follow",
+        headers: {
+          "Accept": "application/zip, application/octet-stream, */*"
+        }
+      });
 
       if (!response.ok) {
         continue;
@@ -638,10 +631,14 @@ async function downloadFeed() {
           await response.arrayBuffer()
         );
 
+      if (bytes.length < 4) {
+        continue;
+      }
+
+      // ZIP começa com PK
       if (
-        bytes.length < 4 ||
         bytes[0] !== 0x50 ||
-        bytes[1] !== 0x4b
+        bytes[1] !== 0x4B
       ) {
         continue;
       }
@@ -650,78 +647,115 @@ async function downloadFeed() {
         unzipSync(bytes);
 
       const records = [];
+      const filesFound = [];
 
       for (
-        const [, fileBytes]
+        const [filename, fileBytes]
         of Object.entries(files)
       ) {
-        if (!fileBytes?.length) {
-          continue;
-        }
+        filesFound.push(filename);
 
         let text;
 
         try {
-          text =
-            strFromU8(fileBytes);
+          text = strFromU8(fileBytes);
         } catch {
           continue;
         }
 
-        if (!text?.trim()) {
+        if (!text || !text.trim()) {
           continue;
         }
 
-        records.push(
-          ...parseJSON(text)
-        );
-      }
+        /*
+         * Primeiro tenta interpretar o arquivo
+         * inteiro como JSON.
+         */
+        const parsed =
+          parseJSON(text);
 
-      const unique =
-        new Map();
+        if (parsed.length > 0) {
+          records.push(...parsed);
+          continue;
+        }
 
-      for (
-        const record
-        of records
-      ) {
-        const caseNumber =
-          clean(
-            record.caseNumber ||
-            record.case_number
-          );
+        /*
+         * Caso o conteúdo seja JSON encapsulado
+         * de outra maneira, procura objetos que
+         * tenham campos típicos do 790/790A.
+         */
+        try {
+          const matches =
+            text.match(
+              /\{[\s\S]*?\}/g
+            );
 
-        if (caseNumber) {
-          unique.set(
-            caseNumber,
-            record
-          );
+          if (matches) {
+            for (const item of matches) {
+              try {
+                const parsedItem =
+                  collectRecords(
+                    JSON.parse(item)
+                  );
+
+                if (parsedItem.length) {
+                  records.push(
+                    ...parsedItem
+                  );
+                }
+              } catch {
+                // Continua procurando.
+              }
+            }
+          }
+        } catch {
+          // Continua com o próximo arquivo.
         }
       }
 
-      const finalRecords =
-        Array.from(
-          unique.values()
-        );
-
-      if (finalRecords.length) {
+      if (records.length > 0) {
         return {
-          records:
-            finalRecords,
-
-          sourceDate:
-            dateString
+          records,
+          sourceDate: dateString
         };
       }
+
+      /*
+       * Se baixou o ZIP corretamente, mas não
+       * conseguiu encontrar registros, retornamos
+       * informações suficientes para descobrir
+       * exatamente o formato recebido.
+       */
+      if (filesFound.length > 0) {
+        throw new Error(
+          `ZIP encontrado em ${dateString}, ` +
+          `mas nenhum registro 790/790A foi identificado. ` +
+          `Arquivos encontrados: ${filesFound.join(", ")}`
+        );
+      }
+
     } catch (error) {
       console.error(
-        `Erro no feed ${dateString}:`,
+        `Erro ao processar feed ${dateString}:`,
         error
       );
+
+      /*
+       * Se o ZIP foi encontrado mas o formato
+       * não foi reconhecido, não precisamos
+       * testar datas anteriores.
+       */
+      if (
+        String(error?.message || "")
+          .includes("ZIP encontrado")
+      ) {
+        throw error;
+      }
     }
   }
 
   throw new Error(
-    "Feed 790/790A não encontrado."
+    "Nenhum feed 790/790A foi encontrado nos últimos 20 dias."
   );
 }
 
