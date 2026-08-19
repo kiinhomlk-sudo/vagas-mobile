@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
 
-  "name": "seasonaljobs-worker",
+  "name": "vagas-mobile-site1",
 
   "main": "src/index.js",
 
@@ -11,7 +11,7 @@
     {
       "binding": "DB",
       "database_name": "seasonaljobs",
-      "database_id": "00000005-00000000-000050cc-90c46ae12a0e0103c859c55b9a9df506"
+      "database_id": "bb024d38-2a6a-42cd-8156-dcd7786077f9"
     }
   ],
 
