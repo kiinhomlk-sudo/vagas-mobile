@@ -3,8 +3,6 @@ import { unzipSync, strFromU8 } from "fflate";
 const DOL_FEED =
   "https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/jo";
 
-const CACHE_KEY = "seasonaljobs-790a-json";
-
 const HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
   "Cache-Control": "public, max-age=300",
@@ -470,10 +468,7 @@ function mapJob(record) {
   };
 }
 
-function collectRecords(
-  value,
-  output = []
-) {
+function collectRecords(value, output = []) {
   if (!value) {
     return output;
   }
@@ -486,9 +481,7 @@ function collectRecords(
     return output;
   }
 
-  if (
-    typeof value !== "object"
-  ) {
+  if (typeof value !== "object") {
     return output;
   }
 
@@ -588,7 +581,7 @@ async function downloadFeed() {
     const response =
       await fetch(url, {
         headers: {
-          "Accept":
+          Accept:
             "application/zip,application/octet-stream"
         }
       });
@@ -644,34 +637,7 @@ async function downloadFeed() {
   );
 }
 
-async function getDatabaseData(env) {
-  const result = await env.DB.prepare(`
-    SELECT *
-    FROM jobs
-    ORDER BY id DESC
-  `).all();
-
-  const jobs = result.results || [];
-
-  return {
-    jobs,
-    total: jobs.length,
-    updatedAt:
-      jobs[0]?.syncedAt ||
-      null,
-    sourceDate:
-      null,
-    sync: {
-      received: 0,
-      inserted: 0,
-      updated: 0
-    },
-    source:
-      "U.S. Department of Labor — SeasonalJobs.dol.gov"
-  };
-}
-
-async function saveJobs(env, jobs) {
+async function saveJobsToD1(env, jobs) {
   if (!jobs.length) {
     return {
       inserted: 0,
@@ -679,156 +645,148 @@ async function saveJobs(env, jobs) {
     };
   }
 
-  const statements = [];
+  const syncedAt =
+    new Date().toISOString();
 
-  for (const job of jobs) {
-    statements.push(
-      env.DB.prepare(`
-        INSERT INTO jobs (
-          id,
-          caseNumber,
-          title,
-          company,
-          city,
-          state,
-          address,
-          postcode,
-          county,
-          type,
-          description,
-          salaryMin,
-          salaryMax,
-          wagePer,
-          pieceRate,
-          specialPay,
-          payFrequency,
-          hours,
-          start,
-          end,
-          workers,
-          experience,
-          requirements,
-          education,
-          trainingMonths,
-          email,
-          phone,
-          phoneExtension,
-          applicationUrl,
-          applicationDetails,
-          housing,
-          transport,
-          meals,
-          tools,
-          posted,
-          socCode,
-          socTitle,
-          updatedAt,
-          sourceUrl,
-          source,
-          syncedAt
-        )
-        VALUES (
-          ?,?,?,?,?,?,?,?,?,?,
-          ?,?,?,?,?,?,?,?,?,?,
-          ?,?,?,?,?,?,?,?,?,?,
-          ?,?,?,?,?,?,?,?,?,?,
-          ?,?
-        )
-        ON CONFLICT(caseNumber)
-        DO UPDATE SET
-          id = excluded.id,
-          title = excluded.title,
-          company = excluded.company,
-          city = excluded.city,
-          state = excluded.state,
-          address = excluded.address,
-          postcode = excluded.postcode,
-          county = excluded.county,
-          type = excluded.type,
-          description = excluded.description,
-          salaryMin = excluded.salaryMin,
-          salaryMax = excluded.salaryMax,
-          wagePer = excluded.wagePer,
-          pieceRate = excluded.pieceRate,
-          specialPay = excluded.specialPay,
-          payFrequency = excluded.payFrequency,
-          hours = excluded.hours,
-          start = excluded.start,
-          end = excluded.end,
-          workers = excluded.workers,
-          experience = excluded.experience,
-          requirements = excluded.requirements,
-          education = excluded.education,
-          trainingMonths = excluded.trainingMonths,
-          email = excluded.email,
-          phone = excluded.phone,
-          phoneExtension = excluded.phoneExtension,
-          applicationUrl = excluded.applicationUrl,
-          applicationDetails = excluded.applicationDetails,
-          housing = excluded.housing,
-          transport = excluded.transport,
-          meals = excluded.meals,
-          tools = excluded.tools,
-          posted = excluded.posted,
-          socCode = excluded.socCode,
-          socTitle = excluded.socTitle,
-          updatedAt = excluded.updatedAt,
-          sourceUrl = excluded.sourceUrl,
-          source = excluded.source,
-          syncedAt = excluded.syncedAt
-      `).bind(
-        job.id,
-        job.caseNumber,
-        job.title,
-        job.company,
-        job.city,
-        job.state,
-        job.address,
-        job.postcode,
-        job.county,
-        job.type,
-        job.description,
-        job.salaryMin,
-        job.salaryMax,
-        job.wagePer,
-        job.pieceRate,
-        job.specialPay,
-        job.payFrequency,
-        job.hours,
-        job.start,
-        job.end,
-        job.workers,
-        job.experience,
-        job.requirements,
-        job.education,
-        job.trainingMonths,
-        job.email,
-        job.phone,
-        job.phoneExtension,
-        job.applicationUrl,
-        job.applicationDetails,
-        job.housing,
-        job.transport,
-        job.meals,
-        job.tools,
-        job.posted,
-        job.socCode,
-        job.socTitle,
-        job.updatedAt,
-        job.sourceUrl,
-        job.source,
-        new Date().toISOString()
+  const statements = jobs.map(job =>
+    env.DB.prepare(`
+      INSERT INTO jobs (
+        id,
+        caseNumber,
+        title,
+        company,
+        city,
+        state,
+        address,
+        postcode,
+        county,
+        type,
+        description,
+        salaryMin,
+        salaryMax,
+        wagePer,
+        pieceRate,
+        specialPay,
+        payFrequency,
+        hours,
+        start,
+        end,
+        workers,
+        experience,
+        requirements,
+        education,
+        trainingMonths,
+        email,
+        phone,
+        phoneExtension,
+        applicationUrl,
+        applicationDetails,
+        housing,
+        transport,
+        meals,
+        tools,
+        posted,
+        socCode,
+        socTitle,
+        updatedAt,
+        sourceUrl,
+        source,
+        syncedAt
       )
-    );
-  }
+      VALUES (
+        ?,?,?,?,?,?,?,?,?,?,
+        ?,?,?,?,?,?,?,?,?,?,
+        ?,?,?,?,?,?,?,?,?,?,
+        ?,?,?,?,?,?,?,?,?,?,
+        ?,?
+      )
+      ON CONFLICT(caseNumber)
+      DO UPDATE SET
+        id = excluded.id,
+        title = excluded.title,
+        company = excluded.company,
+        city = excluded.city,
+        state = excluded.state,
+        address = excluded.address,
+        postcode = excluded.postcode,
+        county = excluded.county,
+        type = excluded.type,
+        description = excluded.description,
+        salaryMin = excluded.salaryMin,
+        salaryMax = excluded.salaryMax,
+        wagePer = excluded.wagePer,
+        pieceRate = excluded.pieceRate,
+        specialPay = excluded.specialPay,
+        payFrequency = excluded.payFrequency,
+        hours = excluded.hours,
+        start = excluded.start,
+        end = excluded.end,
+        workers = excluded.workers,
+        experience = excluded.experience,
+        requirements = excluded.requirements,
+        education = excluded.education,
+        trainingMonths = excluded.trainingMonths,
+        email = excluded.email,
+        phone = excluded.phone,
+        phoneExtension = excluded.phoneExtension,
+        applicationUrl = excluded.applicationUrl,
+        applicationDetails = excluded.applicationDetails,
+        housing = excluded.housing,
+        transport = excluded.transport,
+        meals = excluded.meals,
+        tools = excluded.tools,
+        posted = excluded.posted,
+        socCode = excluded.socCode,
+        socTitle = excluded.socTitle,
+        updatedAt = excluded.updatedAt,
+        sourceUrl = excluded.sourceUrl,
+        source = excluded.source,
+        syncedAt = excluded.syncedAt
+    `).bind(
+      job.id,
+      job.caseNumber,
+      job.title,
+      job.company,
+      job.city,
+      job.state,
+      job.address,
+      job.postcode,
+      job.county,
+      job.type,
+      job.description,
+      job.salaryMin,
+      job.salaryMax,
+      job.wagePer,
+      job.pieceRate,
+      job.specialPay,
+      job.payFrequency,
+      job.hours,
+      job.start,
+      job.end,
+      job.workers,
+      job.experience,
+      job.requirements,
+      job.education,
+      job.trainingMonths,
+      job.email,
+      job.phone,
+      job.phoneExtension,
+      job.applicationUrl,
+      job.applicationDetails,
+      job.housing,
+      job.transport,
+      job.meals,
+      job.tools,
+      job.posted,
+      job.socCode,
+      job.socTitle,
+      job.updatedAt,
+      job.sourceUrl,
+      job.source,
+      syncedAt
+    )
+  );
 
-  let inserted = 0;
-  let updated = 0;
-
-  /*
-   * D1 aceita batch de statements.
-   * Dividimos em grupos para evitar lotes excessivamente grandes.
-   */
   const CHUNK_SIZE = 50;
 
   for (
@@ -836,26 +794,70 @@ async function saveJobs(env, jobs) {
     i < statements.length;
     i += CHUNK_SIZE
   ) {
-    const chunk =
+    await env.DB.batch(
       statements.slice(
         i,
         i + CHUNK_SIZE
-      );
-
-    await env.DB.batch(chunk);
+      )
+    );
   }
 
-  /*
-   * O número exato de INSERT/UPDATE pode variar
-   * dependendo do estado anterior do banco.
-   * O banco é a fonte definitiva depois do UPSERT.
-   */
-  inserted = jobs.length;
-
   return {
-    inserted,
-    updated
+    inserted: jobs.length,
+    updated: 0
   };
+}
+
+async function getJobsFromD1(env) {
+  const result =
+    await env.DB.prepare(`
+      SELECT
+        id,
+        caseNumber,
+        title,
+        company,
+        city,
+        state,
+        address,
+        postcode,
+        county,
+        type,
+        description,
+        salaryMin,
+        salaryMax,
+        wagePer,
+        pieceRate,
+        specialPay,
+        payFrequency,
+        hours,
+        start,
+        end,
+        workers,
+        experience,
+        requirements,
+        education,
+        trainingMonths,
+        email,
+        phone,
+        phoneExtension,
+        applicationUrl,
+        applicationDetails,
+        housing,
+        transport,
+        meals,
+        tools,
+        posted,
+        socCode,
+        socTitle,
+        updatedAt,
+        sourceUrl,
+        source
+      FROM jobs
+      ORDER BY id DESC
+    `)
+    .all();
+
+  return result.results || [];
 }
 
 async function updateDatabase(env) {
@@ -864,41 +866,39 @@ async function updateDatabase(env) {
 
   const jobs = [];
 
-  for (const record of feed.records) {
+  for (
+    const record
+    of feed.records
+  ) {
     const job =
       mapJob(record);
 
-    if (!job) {
-      continue;
+    if (job) {
+      jobs.push(job);
     }
-
-    jobs.push(job);
   }
 
   const sync =
-    await saveJobs(
+    await saveJobsToD1(
       env,
       jobs
     );
 
-  const result =
+  const count =
     await env.DB.prepare(`
       SELECT COUNT(*) AS total
       FROM jobs
     `).first();
 
-  const total =
-    Number(result?.total || 0);
-
   return {
-    jobs,
-    total,
-
-    updatedAt:
-      new Date().toISOString(),
+    total:
+      Number(count?.total || 0),
 
     sourceDate:
       feed.sourceDate,
+
+    updatedAt:
+      new Date().toISOString(),
 
     sync: {
       received:
@@ -942,27 +942,38 @@ export default {
       "/jobs"
     ) {
       try {
-        const data =
-          await getDatabaseData(env);
+        const jobs =
+          await getJobsFromD1(env);
+
+        const count =
+          await env.DB.prepare(`
+            SELECT
+              COUNT(*) AS total,
+              MAX(syncedAt) AS updatedAt
+            FROM jobs
+          `).first();
 
         return responseJSON({
-          jobs:
-            data.jobs,
+          jobs,
 
           total:
-            data.total,
+            Number(count?.total || 0),
 
           updatedAt:
-            data.updatedAt,
+            count?.updatedAt ||
+            null,
 
           sourceDate:
-            data.sourceDate,
+            null,
 
-          sync:
-            data.sync,
+          sync: {
+            received: 0,
+            inserted: 0,
+            updated: 0
+          },
 
           source:
-            data.source
+            "U.S. Department of Labor — SeasonalJobs.dol.gov"
         });
       } catch (error) {
         return responseJSON(
@@ -1034,9 +1045,6 @@ export default {
 
           database:
             "D1",
-
-          cached:
-            Number(result?.total || 0) > 0,
 
           total:
             Number(result?.total || 0),
