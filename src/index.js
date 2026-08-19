@@ -1,4 +1,4 @@
-import { unzipSync, strFromU8 } from "fflate";
+se import { unzipSync, strFromU8 } from "fflate";
 
 const DOL_FEED =
   "https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/jo";
@@ -558,52 +558,44 @@ function parseJSON(text) {
 }
 
 async function downloadFeed() {
-  const today =
-    new Date();
+  const FEED_URL =
+    "https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/jo";
 
-  for (
-    let offset = 0;
-    offset <= 2;
-    offset++
-  ) {
-    const date =
-      new Date(today);
+  const response = await fetch(FEED_URL, {
+    headers: {
+      "Accept": "application/zip,application/octet-stream"
+    }
+  });
 
-    date.setUTCDate(
-      date.getUTCDate() - offset
+  if (!response.ok) {
+    throw new Error(
+      `Feed 790/790A retornou HTTP ${response.status}.`
+    );
+  }
+
+  const contentType =
+    response.headers.get("content-type") || "";
+
+  const bytes =
+    new Uint8Array(
+      await response.arrayBuffer()
     );
 
-    const dateString =
-      date.toISOString()
-        .slice(0, 10);
+  /*
+   * O feed oficial é fornecido como JSON.
+   * Algumas versões podem retornar ZIP.
+   * Tratamos os dois formatos.
+   */
 
-    const url =
-      `${DOL_FEED}/${dateString}`;
-
-    const response =
-      await fetch(url, {
-        headers: {
-          Accept:
-            "application/zip,application/octet-stream"
-        }
-      });
-
-    if (!response.ok) {
-      continue;
-    }
-
-    const zip =
-      new Uint8Array(
-        await response.arrayBuffer()
-      );
-
-    const files =
-      unzipSync(zip);
-
+  if (
+    contentType.includes("zip") ||
+    contentType.includes("octet-stream")
+  ) {
+    const files = unzipSync(bytes);
     const records = [];
 
     for (
-      const [filename, bytes]
+      const [filename, fileBytes]
       of Object.entries(files)
     ) {
       const lower =
@@ -620,7 +612,7 @@ async function downloadFeed() {
 
       records.push(
         ...parseJSON(
-          strFromU8(bytes)
+          strFromU8(fileBytes)
         )
       );
     }
@@ -629,16 +621,32 @@ async function downloadFeed() {
       return {
         records,
         sourceDate:
-          dateString
+          new Date().toISOString().slice(0, 10)
       };
     }
   }
 
+  /*
+   * Caso o endpoint retorne JSON diretamente.
+   */
+  const text =
+    new TextDecoder().decode(bytes);
+
+  const records =
+    parseJSON(text);
+
+  if (records.length) {
+    return {
+      records,
+      sourceDate:
+        new Date().toISOString().slice(0, 10)
+    };
+  }
+
   throw new Error(
-    "Feed 790/790A não encontrado."
+    "O feed 790/790A foi acessado, mas nenhum registro foi encontrado."
   );
 }
-
 /*
  * As 41 colunas da tabela D1.
  *
