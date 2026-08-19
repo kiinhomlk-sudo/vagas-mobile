@@ -1,4 +1,4 @@
-se import { unzipSync, strFromU8 } from "fflate";
+import { unzipSync, strFromU8 } from "fflate";
 
 const DOL_FEED =
   "https://api.seasonaljobs.dol.gov/datahub-search/sjCaseData/zip/jo";
@@ -557,11 +557,13 @@ function parseJSON(text) {
   }
 }
 
+/*
+ * NOVA VERSÃO
+ * Somente esta função foi alterada.
+ */
 async function downloadFeed() {
   const today = new Date();
 
-  // Tenta uma janela maior porque o feed oficial
-  // representa os dados dos últimos 20 dias.
   for (let offset = 0; offset <= 20; offset++) {
     const date = new Date(today);
 
@@ -576,13 +578,22 @@ async function downloadFeed() {
       `${DOL_FEED}/${dateString}`;
 
     try {
+      console.log(
+        `Tentando feed oficial: ${url}`
+      );
+
       const response = await fetch(url, {
         method: "GET",
         redirect: "follow",
         headers: {
-          "Accept": "application/zip, application/octet-stream, */*"
+          "Accept":
+            "application/zip, application/octet-stream, */*"
         }
       });
+
+      console.log(
+        `Feed ${dateString}: HTTP ${response.status}`
+      );
 
       if (!response.ok) {
         continue;
@@ -593,24 +604,42 @@ async function downloadFeed() {
           await response.arrayBuffer()
         );
 
+      console.log(
+        `Feed ${dateString}: ${bytes.length} bytes`
+      );
+
       if (bytes.length < 4) {
         continue;
       }
 
       /*
-       * ZIP começa normalmente com:
-       * 50 4B 03 04
+       * ZIP começa com 50 4B.
        */
       const isZip =
         bytes[0] === 0x50 &&
         bytes[1] === 0x4B;
 
       if (!isZip) {
+        console.log(
+          `Resposta ${dateString} não parece ser ZIP.`
+        );
+
         continue;
       }
 
-      const files =
-        unzipSync(bytes);
+      let files;
+
+      try {
+        files =
+          unzipSync(bytes);
+      } catch (error) {
+        console.error(
+          `Erro ao abrir ZIP ${dateString}:`,
+          error
+        );
+
+        continue;
+      }
 
       const records = [];
 
@@ -618,31 +647,183 @@ async function downloadFeed() {
         const [filename, fileBytes]
         of Object.entries(files)
       ) {
-        const lower =
-          filename.toLowerCase();
+        console.log(
+          `Arquivo encontrado no ZIP: ${filename}`
+        );
 
         if (
-          !lower.endsWith(".json") &&
-          !lower.endsWith(".ndjson") &&
-          !lower.endsWith(".txt") &&
-          !lower.endsWith(".dat")
+          !fileBytes ||
+          !fileBytes.length
         ) {
           continue;
         }
 
-        records.push(
-          ...parseJSON(
-            strFromU8(fileBytes)
-          )
-        );
+        let text;
+
+        try {
+          text =
+            strFromU8(fileBytes);
+        } catch (error) {
+          console.error(
+            `Erro ao ler ${filename}:`,
+            error
+          );
+
+          continue;
+        }
+
+        if (
+          !text ||
+          !text.trim()
+        ) {
+          continue;
+        }
+
+        /*
+         * 1. JSON normal ou NDJSON.
+         */
+        const parsed =
+          parseJSON(text);
+
+        if (parsed.length) {
+          console.log(
+            `${filename}: ${parsed.length} registros encontrados`
+          );
+
+          records.push(
+            ...parsed
+          );
+
+          continue;
+        }
+
+        /*
+         * 2. Procura objetos JSON
+         * dentro do conteúdo.
+         */
+        try {
+          const matches =
+            text.match(
+              /\{[\s\S]*?\}/g
+            );
+
+          if (matches) {
+            for (
+              const match
+              of matches
+            ) {
+              try {
+                const obj =
+                  JSON.parse(match);
+
+                const found =
+                  collectRecords(obj);
+
+                if (found.length) {
+                  records.push(
+                    ...found
+                  );
+                }
+              } catch {
+                // Continua procurando.
+              }
+            }
+          }
+        } catch {
+          // Ignora conteúdo inválido.
+        }
+
+        /*
+         * 3. Tenta CSV ou TSV.
+         */
+        if (!records.length) {
+          const lines =
+            text
+              .split(/\r?\n/)
+              .map(line => line.trim())
+              .filter(Boolean);
+
+          if (lines.length >= 2) {
+            const separator =
+              lines[0].includes("\t")
+                ? "\t"
+                : lines[0].includes(",")
+                  ? ","
+                  : null;
+
+            if (separator) {
+              const headers =
+                lines[0]
+                  .split(separator)
+                  .map(value =>
+                    value
+                      .replace(/^"|"$/g, "")
+                      .trim()
+                  );
+
+              for (
+                let i = 1;
+                i < lines.length;
+                i++
+              ) {
+                const values =
+                  lines[i]
+                    .split(separator)
+                    .map(value =>
+                      value
+                        .replace(/^"|"$/g, "")
+                        .trim()
+                    );
+
+                if (
+                  values.length !==
+                  headers.length
+                ) {
+                  continue;
+                }
+
+                const record = {};
+
+                for (
+                  let j = 0;
+                  j < headers.length;
+                  j++
+                ) {
+                  record[
+                    headers[j]
+                  ] = values[j];
+                }
+
+                if (
+                  record.caseNumber ||
+                  record.jobTitle ||
+                  record.jobWrksNeeded ||
+                  record.clearanceOrderNumber
+                ) {
+                  records.push(
+                    record
+                  );
+                }
+              }
+            }
+          }
+        }
       }
 
       if (records.length > 0) {
+        console.log(
+          `Feed ${dateString} encontrado: ${records.length} registros`
+        );
+
         return {
           records,
           sourceDate: dateString
         };
       }
+
+      console.log(
+        `Feed ${dateString} foi baixado, mas nenhum registro foi identificado.`
+      );
     } catch (error) {
       console.error(
         `Erro ao processar feed ${dateString}:`,
@@ -655,11 +836,9 @@ async function downloadFeed() {
     "Feed 790/790A não encontrado ou não contém registros válidos."
   );
 }
+
 /*
  * As 41 colunas da tabela D1.
- *
- * A lista é usada para gerar os placeholders
- * automaticamente, evitando erro de quantidade.
  */
 const JOB_COLUMNS = [
   "id",
@@ -797,12 +976,6 @@ async function saveJobsToD1(env, jobs) {
         )
     );
 
-  /*
-   * Cada statement tem 41 parâmetros.
-   * O limite atual do D1 para parâmetros
-   * por query é 100, portanto cada statement
-   * individual está dentro do limite.
-   */
   const CHUNK_SIZE = 50;
 
   for (
