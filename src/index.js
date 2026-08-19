@@ -644,62 +644,227 @@ async function downloadFeed() {
   );
 }
 
-async function getCache(env) {
-  const value =
-    await env.JOBS.get(
-      CACHE_KEY
-    );
+async function getDatabaseData(env) {
+  const result = await env.DB.prepare(`
+    SELECT *
+    FROM jobs
+    ORDER BY id DESC
+  `).all();
 
-  if (!value) {
-    return null;
-  }
+  const jobs = result.results || [];
 
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
+  return {
+    jobs,
+    total: jobs.length,
+    updatedAt:
+      jobs[0]?.syncedAt ||
+      null,
+    sourceDate:
+      null,
+    sync: {
+      received: 0,
+      inserted: 0,
+      updated: 0
+    },
+    source:
+      "U.S. Department of Labor — SeasonalJobs.dol.gov"
+  };
 }
 
-async function updateCache(env) {
-  const feed =
-    await downloadFeed();
+async function saveJobs(env, jobs) {
+  if (!jobs.length) {
+    return {
+      inserted: 0,
+      updated: 0
+    };
+  }
 
-  const existing =
-    await getCache(env);
+  const statements = [];
 
-  const jobs =
-    new Map();
-
-  /*
-   * Mantém a base existente.
-   * Isso é importante porque o feed oficial
-   * representa uma janela móvel de 20 dias.
-   */
-  if (
-    existing &&
-    Array.isArray(existing.jobs)
-  ) {
-    for (
-      const job
-      of existing.jobs
-    ) {
-      if (job.caseNumber) {
-        jobs.set(
-          job.caseNumber,
-          job
-        );
-      }
-    }
+  for (const job of jobs) {
+    statements.push(
+      env.DB.prepare(`
+        INSERT INTO jobs (
+          id,
+          caseNumber,
+          title,
+          company,
+          city,
+          state,
+          address,
+          postcode,
+          county,
+          type,
+          description,
+          salaryMin,
+          salaryMax,
+          wagePer,
+          pieceRate,
+          specialPay,
+          payFrequency,
+          hours,
+          start,
+          end,
+          workers,
+          experience,
+          requirements,
+          education,
+          trainingMonths,
+          email,
+          phone,
+          phoneExtension,
+          applicationUrl,
+          applicationDetails,
+          housing,
+          transport,
+          meals,
+          tools,
+          posted,
+          socCode,
+          socTitle,
+          updatedAt,
+          sourceUrl,
+          source,
+          syncedAt
+        )
+        VALUES (
+          ?,?,?,?,?,?,?,?,?,?,
+          ?,?,?,?,?,?,?,?,?,?,
+          ?,?,?,?,?,?,?,?,?,?,
+          ?,?,?,?,?,?,?,?,?,?,
+          ?,?
+        )
+        ON CONFLICT(caseNumber)
+        DO UPDATE SET
+          id = excluded.id,
+          title = excluded.title,
+          company = excluded.company,
+          city = excluded.city,
+          state = excluded.state,
+          address = excluded.address,
+          postcode = excluded.postcode,
+          county = excluded.county,
+          type = excluded.type,
+          description = excluded.description,
+          salaryMin = excluded.salaryMin,
+          salaryMax = excluded.salaryMax,
+          wagePer = excluded.wagePer,
+          pieceRate = excluded.pieceRate,
+          specialPay = excluded.specialPay,
+          payFrequency = excluded.payFrequency,
+          hours = excluded.hours,
+          start = excluded.start,
+          end = excluded.end,
+          workers = excluded.workers,
+          experience = excluded.experience,
+          requirements = excluded.requirements,
+          education = excluded.education,
+          trainingMonths = excluded.trainingMonths,
+          email = excluded.email,
+          phone = excluded.phone,
+          phoneExtension = excluded.phoneExtension,
+          applicationUrl = excluded.applicationUrl,
+          applicationDetails = excluded.applicationDetails,
+          housing = excluded.housing,
+          transport = excluded.transport,
+          meals = excluded.meals,
+          tools = excluded.tools,
+          posted = excluded.posted,
+          socCode = excluded.socCode,
+          socTitle = excluded.socTitle,
+          updatedAt = excluded.updatedAt,
+          sourceUrl = excluded.sourceUrl,
+          source = excluded.source,
+          syncedAt = excluded.syncedAt
+      `).bind(
+        job.id,
+        job.caseNumber,
+        job.title,
+        job.company,
+        job.city,
+        job.state,
+        job.address,
+        job.postcode,
+        job.county,
+        job.type,
+        job.description,
+        job.salaryMin,
+        job.salaryMax,
+        job.wagePer,
+        job.pieceRate,
+        job.specialPay,
+        job.payFrequency,
+        job.hours,
+        job.start,
+        job.end,
+        job.workers,
+        job.experience,
+        job.requirements,
+        job.education,
+        job.trainingMonths,
+        job.email,
+        job.phone,
+        job.phoneExtension,
+        job.applicationUrl,
+        job.applicationDetails,
+        job.housing,
+        job.transport,
+        job.meals,
+        job.tools,
+        job.posted,
+        job.socCode,
+        job.socTitle,
+        job.updatedAt,
+        job.sourceUrl,
+        job.source,
+        new Date().toISOString()
+      )
+    );
   }
 
   let inserted = 0;
   let updated = 0;
 
+  /*
+   * D1 aceita batch de statements.
+   * Dividimos em grupos para evitar lotes excessivamente grandes.
+   */
+  const CHUNK_SIZE = 50;
+
   for (
-    const record
-    of feed.records
+    let i = 0;
+    i < statements.length;
+    i += CHUNK_SIZE
   ) {
+    const chunk =
+      statements.slice(
+        i,
+        i + CHUNK_SIZE
+      );
+
+    await env.DB.batch(chunk);
+  }
+
+  /*
+   * O número exato de INSERT/UPDATE pode variar
+   * dependendo do estado anterior do banco.
+   * O banco é a fonte definitiva depois do UPSERT.
+   */
+  inserted = jobs.length;
+
+  return {
+    inserted,
+    updated
+  };
+}
+
+async function updateDatabase(env) {
+  const feed =
+    await downloadFeed();
+
+  const jobs = [];
+
+  for (const record of feed.records) {
     const job =
       mapJob(record);
 
@@ -707,28 +872,27 @@ async function updateCache(env) {
       continue;
     }
 
-    if (
-      jobs.has(job.caseNumber)
-    ) {
-      updated++;
-    } else {
-      inserted++;
-    }
-
-    jobs.set(
-      job.caseNumber,
-      job
-    );
+    jobs.push(job);
   }
 
-  const finalJobs =
-    Array.from(jobs.values());
+  const sync =
+    await saveJobs(
+      env,
+      jobs
+    );
 
-  const data = {
-    jobs: finalJobs,
+  const result =
+    await env.DB.prepare(`
+      SELECT COUNT(*) AS total
+      FROM jobs
+    `).first();
 
-    total:
-      finalJobs.length,
+  const total =
+    Number(result?.total || 0);
+
+  return {
+    jobs,
+    total,
 
     updatedAt:
       new Date().toISOString(),
@@ -740,21 +904,16 @@ async function updateCache(env) {
       received:
         feed.records.length,
 
-      inserted,
+      inserted:
+        sync.inserted,
 
-      updated
+      updated:
+        sync.updated
     },
 
     source:
       "U.S. Department of Labor — SeasonalJobs.dol.gov"
   };
-
-  await env.JOBS.put(
-    CACHE_KEY,
-    JSON.stringify(data)
-  );
-
-  return data;
 }
 
 export default {
@@ -782,30 +941,42 @@ export default {
       url.pathname ===
       "/jobs"
     ) {
-      let data =
-        await getCache(env);
+      try {
+        const data =
+          await getDatabaseData(env);
 
-      if (!data) {
-        try {
-          data =
-            await updateCache(env);
-        } catch (error) {
-          return responseJSON(
-            {
-              error:
-                "Não foi possível carregar as vagas.",
-              details:
-                error?.message ||
-                String(error)
-            },
-            502
-          );
-        }
+        return responseJSON({
+          jobs:
+            data.jobs,
+
+          total:
+            data.total,
+
+          updatedAt:
+            data.updatedAt,
+
+          sourceDate:
+            data.sourceDate,
+
+          sync:
+            data.sync,
+
+          source:
+            data.source
+        });
+      } catch (error) {
+        return responseJSON(
+          {
+            error:
+              "Não foi possível consultar as vagas no D1.",
+
+            details:
+              error?.message ||
+              String(error)
+          },
+          502
+        );
       }
-
-      return responseJSON(
-        data
-      );
     }
 
     if (
@@ -814,14 +985,20 @@ export default {
     ) {
       try {
         const data =
-          await updateCache(env);
+          await updateDatabase(env);
 
         return responseJSON({
           ok: true,
-          total: data.total,
-          sync: data.sync,
+
+          total:
+            data.total,
+
+          sync:
+            data.sync,
+
           sourceDate:
             data.sourceDate,
+
           updatedAt:
             data.updatedAt
         });
@@ -829,6 +1006,7 @@ export default {
         return responseJSON(
           {
             ok: false,
+
             error:
               error?.message ||
               String(error)
@@ -842,24 +1020,46 @@ export default {
       url.pathname ===
       "/health"
     ) {
-      const data =
-        await getCache(env);
+      try {
+        const result =
+          await env.DB.prepare(`
+            SELECT
+              COUNT(*) AS total,
+              MAX(syncedAt) AS updatedAt
+            FROM jobs
+          `).first();
 
-      return responseJSON({
-        ok: true,
+        return responseJSON({
+          ok: true,
 
-        cached:
-          Boolean(data),
+          database:
+            "D1",
 
-        total:
-          data?.total || 0,
+          cached:
+            Number(result?.total || 0) > 0,
 
-        updatedAt:
-          data?.updatedAt || null,
+          total:
+            Number(result?.total || 0),
 
-        sourceDate:
-          data?.sourceDate || null
-      });
+          updatedAt:
+            result?.updatedAt ||
+            null
+        });
+      } catch (error) {
+        return responseJSON(
+          {
+            ok: false,
+
+            database:
+              "D1",
+
+            error:
+              error?.message ||
+              String(error)
+          },
+          502
+        );
+      }
     }
 
     return responseJSON(
@@ -877,10 +1077,10 @@ export default {
     ctx
   ) {
     ctx.waitUntil(
-      updateCache(env)
+      updateDatabase(env)
         .catch(error => {
           console.error(
-            "Erro na sincronização:",
+            "Erro na sincronização D1:",
             error
           );
         })
