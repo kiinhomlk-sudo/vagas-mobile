@@ -19,9 +19,7 @@ function responseJSON(data, status = 200) {
 }
 
 function clean(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
+  if (value === null || value === undefined) return "";
 
   if (typeof value === "string") {
     return value.trim();
@@ -40,18 +38,14 @@ function number(value) {
   }
 
   if (typeof value === "number") {
-    return Number.isFinite(value)
-      ? value
-      : null;
+    return Number.isFinite(value) ? value : null;
   }
 
   const match = String(value)
     .replace(/,/g, "")
     .match(/-?\d+(?:\.\d+)?/);
 
-  return match
-    ? Number(match[0])
-    : null;
+  return match ? Number(match[0]) : null;
 }
 
 function salary(record) {
@@ -79,8 +73,7 @@ function salary(record) {
     }
   }
 
-  const pieceRate =
-    number(record.jobPieceRate);
+  const pieceRate = number(record.jobPieceRate);
 
   return {
     min: pieceRate,
@@ -89,13 +82,9 @@ function salary(record) {
 }
 
 function experience(record) {
-  const months =
-    number(record.jobMinexpmonths);
+  const months = number(record.jobMinexpmonths);
 
-  if (
-    months === null ||
-    months <= 0
-  ) {
+  if (months === null || months <= 0) {
     return "Não exigida";
   }
 
@@ -103,8 +92,7 @@ function experience(record) {
 }
 
 function hours(record) {
-  const total =
-    number(record.jobHoursTotal);
+  const total = number(record.jobHoursTotal);
 
   if (total === null) {
     return "Não informado";
@@ -140,16 +128,10 @@ function transport(record) {
     .map(clean)
     .filter(Boolean);
 
-  const min =
-    number(record.transportMinreimburse);
+  const min = number(record.transportMinreimburse);
+  const max = number(record.transportMaxreimburse);
 
-  const max =
-    number(record.transportMaxreimburse);
-
-  if (
-    min !== null ||
-    max !== null
-  ) {
+  if (min !== null || max !== null) {
     let text = "Reembolso: ";
 
     if (min !== null) {
@@ -171,8 +153,7 @@ function transport(record) {
 function meals(record) {
   const values = [];
 
-  const description =
-    clean(record.mealDescription);
+  const description = clean(record.mealDescription);
 
   if (description) {
     values.push(description);
@@ -183,8 +164,7 @@ function meals(record) {
     record.mealIsCharged === "1";
 
   if (charged) {
-    const charge =
-      number(record.mealCharge);
+    const charge = number(record.mealCharge);
 
     values.push(
       charge !== null
@@ -201,27 +181,21 @@ function meals(record) {
 function requirements(record) {
   const values = [];
 
-  const additional =
-    clean(record.jobAddReqinfo);
+  const additional = clean(record.jobAddReqinfo);
 
   if (additional) {
     values.push(additional);
   }
 
-  const education =
-    clean(record.jobMinedu);
+  const education = clean(record.jobMinedu);
 
   if (education) {
     values.push(`Escolaridade: ${education}`);
   }
 
-  const training =
-    number(record.jobMintrainingmonths);
+  const training = number(record.jobMintrainingmonths);
 
-  if (
-    training !== null &&
-    training > 0
-  ) {
+  if (training !== null && training > 0) {
     values.push(
       `Treinamento: ${training} mês(es)`
     );
@@ -231,44 +205,35 @@ function requirements(record) {
     record.jobIsCert === 1 ||
     record.jobIsCert === "1"
   ) {
-    values.push(
-      "Certificação/licença exigida"
-    );
+    values.push("Certificação/licença exigida");
   }
 
   if (
     record.jobIsDriver === 1 ||
     record.jobIsDriver === "1"
   ) {
-    values.push(
-      "Requisitos para motorista"
-    );
+    values.push("Requisitos para motorista");
   }
 
   if (
     record.jobIsBackground === 1 ||
     record.jobIsBackground === "1"
   ) {
-    values.push(
-      "Verificação de antecedentes"
-    );
+    values.push("Verificação de antecedentes");
   }
 
   if (
     record.jobIsDrugScreen === 1 ||
     record.jobIsDrugScreen === "1"
   ) {
-    values.push(
-      "Teste de drogas"
-    );
+    values.push("Teste de drogas");
   }
 
   if (
     record.jobIsLifting === 1 ||
     record.jobIsLifting === "1"
   ) {
-    const weight =
-      number(record.jobLiftingWeight);
+    const weight = number(record.jobLiftingWeight);
 
     values.push(
       weight !== null
@@ -305,16 +270,12 @@ function makeId(record) {
     clean(record.caseNumber) ||
     clean(record.clearanceOrderNumber);
 
-  if (!source) {
-    return null;
-  }
+  if (!source) return null;
 
   const digits =
     String(source).replace(/\D/g, "");
 
-  if (!digits) {
-    return null;
-  }
+  if (!digits) return null;
 
   const id =
     Number(digits.slice(-15));
@@ -328,19 +289,12 @@ function mapJob(record) {
   const caseNumber =
     clean(record.caseNumber);
 
-  if (!caseNumber) {
-    return null;
-  }
+  if (!caseNumber) return null;
 
-  const pay =
-    salary(record);
+  const pay = salary(record);
+  const id = makeId(record);
 
-  const id =
-    makeId(record);
-
-  if (id === null) {
-    return null;
-  }
+  if (id === null) return null;
 
   return {
     id,
@@ -470,6 +424,9 @@ function mapJob(record) {
   };
 }
 
+/*
+ * Procura registros JSON de forma recursiva.
+ */
 function collectRecords(value, output = []) {
   if (!value) {
     return output;
@@ -487,6 +444,9 @@ function collectRecords(value, output = []) {
     return output;
   }
 
+  /*
+   * Registro 790/790A.
+   */
   if (
     value.caseNumber ||
     value.jobTitle ||
@@ -497,13 +457,19 @@ function collectRecords(value, output = []) {
     return output;
   }
 
+  /*
+   * Containers comuns.
+   */
   for (const key of [
     "data",
     "jobs",
     "results",
     "records",
     "items",
-    "jobOrders"
+    "jobOrders",
+    "joborders",
+    "job_order",
+    "jobOrdersData"
   ]) {
     if (value[key]) {
       collectRecords(
@@ -513,57 +479,158 @@ function collectRecords(value, output = []) {
     }
   }
 
+  /*
+   * Caso o JSON tenha uma estrutura diferente,
+   * procura objetos filhos também.
+   */
+  if (output.length === 0) {
+    for (const valueItem of Object.values(value)) {
+      if (
+        valueItem &&
+        typeof valueItem === "object"
+      ) {
+        collectRecords(
+          valueItem,
+          output
+        );
+      }
+    }
+  }
+
   return output;
 }
 
+/*
+ * Tenta interpretar um texto como JSON,
+ * JSON em linhas ou conteúdo que possua
+ * um objeto JSON dentro.
+ */
 function parseJSON(text) {
-  const value =
-    text.trim();
+  const value = text.trim();
 
   if (!value) {
     return [];
   }
 
+  /*
+   * JSON normal.
+   */
   try {
-    return collectRecords(
-      JSON.parse(value)
-    );
-  } catch {
-    const records = [];
+    const parsed = JSON.parse(value);
 
-    for (
-      const line of
-      value.split(/\r?\n/)
-    ) {
-      const row =
-        line.trim();
+    const records =
+      collectRecords(parsed);
 
-      if (!row) {
-        continue;
-      }
-
-      try {
-        records.push(
-          ...collectRecords(
-            JSON.parse(row)
-          )
-        );
-      } catch {
-        // Ignora linha inválida.
-      }
+    if (records.length) {
+      return records;
     }
+  } catch {
+    // Continua tentando.
+  }
 
+  /*
+   * NDJSON / JSON Lines.
+   */
+  const records = [];
+
+  for (
+    const line of value.split(/\r?\n/)
+  ) {
+    const row = line.trim();
+
+    if (!row) continue;
+
+    try {
+      const parsed = JSON.parse(row);
+
+      records.push(
+        ...collectRecords(parsed)
+      );
+    } catch {
+      // Ignora linha que não seja JSON.
+    }
+  }
+
+  if (records.length) {
     return records;
   }
+
+  /*
+   * Algumas fontes podem colocar JSON
+   * depois de texto adicional.
+   */
+  const firstBrace = value.indexOf("{");
+  const lastBrace = value.lastIndexOf("}");
+
+  if (
+    firstBrace >= 0 &&
+    lastBrace > firstBrace
+  ) {
+    try {
+      const parsed =
+        JSON.parse(
+          value.slice(
+            firstBrace,
+            lastBrace + 1
+          )
+        );
+
+      return collectRecords(parsed);
+    } catch {
+      // Não conseguiu interpretar.
+    }
+  }
+
+  return [];
 }
 
 /*
- * NOVA VERSÃO
- * Somente esta função foi alterada.
+ * Verifica se os bytes parecem JSON/texto.
+ */
+function looksLikeText(bytes) {
+  if (!bytes || bytes.length === 0) {
+    return false;
+  }
+
+  let printable = 0;
+  const sampleLength =
+    Math.min(bytes.length, 1000);
+
+  for (
+    let i = 0;
+    i < sampleLength;
+    i++
+  ) {
+    const byte = bytes[i];
+
+    if (
+      byte === 9 ||
+      byte === 10 ||
+      byte === 13 ||
+      (byte >= 32 && byte <= 126)
+    ) {
+      printable++;
+    }
+  }
+
+  return (
+    printable / sampleLength > 0.80
+  );
+}
+
+/*
+ * NOVA versão do downloadFeed().
+ *
+ * Não depende mais da extensão do arquivo
+ * que está dentro do ZIP.
  */
 async function downloadFeed() {
   const today = new Date();
 
+  /*
+   * O feed oficial representa os últimos 20 dias.
+   * Tentamos do dia atual para trás.
+   */
   for (let offset = 0; offset <= 20; offset++) {
     const date = new Date(today);
 
@@ -579,7 +646,7 @@ async function downloadFeed() {
 
     try {
       console.log(
-        `Tentando feed oficial: ${url}`
+        `Tentando feed 790/790A: ${url}`
       );
 
       const response = await fetch(url, {
@@ -591,11 +658,11 @@ async function downloadFeed() {
         }
       });
 
-      console.log(
-        `Feed ${dateString}: HTTP ${response.status}`
-      );
-
       if (!response.ok) {
+        console.log(
+          `Feed ${dateString} retornou HTTP ${response.status}`
+        );
+
         continue;
       }
 
@@ -604,16 +671,17 @@ async function downloadFeed() {
           await response.arrayBuffer()
         );
 
-      console.log(
-        `Feed ${dateString}: ${bytes.length} bytes`
-      );
-
       if (bytes.length < 4) {
         continue;
       }
 
       /*
-       * ZIP começa com 50 4B.
+       * ZIP:
+       *
+       * 50 4B 03 04
+       *
+       * Também aceitamos outros headers ZIP
+       * como diretórios vazios.
        */
       const isZip =
         bytes[0] === 0x50 &&
@@ -621,8 +689,27 @@ async function downloadFeed() {
 
       if (!isZip) {
         console.log(
-          `Resposta ${dateString} não parece ser ZIP.`
+          `Resposta ${dateString} não parece ZIP`
         );
+
+        /*
+         * Caso o servidor entregue JSON
+         * diretamente, tentamos interpretar.
+         */
+        if (looksLikeText(bytes)) {
+          const text =
+            strFromU8(bytes);
+
+          const directRecords =
+            parseJSON(text);
+
+          if (directRecords.length) {
+            return {
+              records: directRecords,
+              sourceDate: dateString
+            };
+          }
+        }
 
         continue;
       }
@@ -634,7 +721,7 @@ async function downloadFeed() {
           unzipSync(bytes);
       } catch (error) {
         console.error(
-          `Erro ao abrir ZIP ${dateString}:`,
+          `Erro descompactando ZIP ${dateString}:`,
           error
         );
 
@@ -643,190 +730,85 @@ async function downloadFeed() {
 
       const records = [];
 
+      /*
+       * IMPORTANTE:
+       *
+       * Não filtramos mais por .json/.txt/.dat.
+       *
+       * Todo arquivo do ZIP é analisado.
+       */
       for (
         const [filename, fileBytes]
         of Object.entries(files)
       ) {
-        console.log(
-          `Arquivo encontrado no ZIP: ${filename}`
-        );
-
-        if (
-          !fileBytes ||
-          !fileBytes.length
-        ) {
-          continue;
-        }
-
-        let text;
-
         try {
-          text =
-            strFromU8(fileBytes);
-        } catch (error) {
-          console.error(
-            `Erro ao ler ${filename}:`,
-            error
-          );
-
-          continue;
-        }
-
-        if (
-          !text ||
-          !text.trim()
-        ) {
-          continue;
-        }
-
-        /*
-         * 1. JSON normal ou NDJSON.
-         */
-        const parsed =
-          parseJSON(text);
-
-        if (parsed.length) {
           console.log(
-            `${filename}: ${parsed.length} registros encontrados`
+            `Analisando arquivo do feed: ${filename}`
           );
 
-          records.push(
-            ...parsed
-          );
+          if (!looksLikeText(fileBytes)) {
+            continue;
+          }
 
-          continue;
-        }
+          const text =
+            strFromU8(fileBytes);
 
-        /*
-         * 2. Procura objetos JSON
-         * dentro do conteúdo.
-         */
-        try {
-          const matches =
-            text.match(
-              /\{[\s\S]*?\}/g
+          const parsedRecords =
+            parseJSON(text);
+
+          if (parsedRecords.length) {
+            records.push(
+              ...parsedRecords
             );
 
-          if (matches) {
-            for (
-              const match
-              of matches
-            ) {
-              try {
-                const obj =
-                  JSON.parse(match);
-
-                const found =
-                  collectRecords(obj);
-
-                if (found.length) {
-                  records.push(
-                    ...found
-                  );
-                }
-              } catch {
-                // Continua procurando.
-              }
-            }
+            console.log(
+              `Encontrados ${parsedRecords.length} registros em ${filename}`
+            );
           }
-        } catch {
-          // Ignora conteúdo inválido.
-        }
-
-        /*
-         * 3. Tenta CSV ou TSV.
-         */
-        if (!records.length) {
-          const lines =
-            text
-              .split(/\r?\n/)
-              .map(line => line.trim())
-              .filter(Boolean);
-
-          if (lines.length >= 2) {
-            const separator =
-              lines[0].includes("\t")
-                ? "\t"
-                : lines[0].includes(",")
-                  ? ","
-                  : null;
-
-            if (separator) {
-              const headers =
-                lines[0]
-                  .split(separator)
-                  .map(value =>
-                    value
-                      .replace(/^"|"$/g, "")
-                      .trim()
-                  );
-
-              for (
-                let i = 1;
-                i < lines.length;
-                i++
-              ) {
-                const values =
-                  lines[i]
-                    .split(separator)
-                    .map(value =>
-                      value
-                        .replace(/^"|"$/g, "")
-                        .trim()
-                    );
-
-                if (
-                  values.length !==
-                  headers.length
-                ) {
-                  continue;
-                }
-
-                const record = {};
-
-                for (
-                  let j = 0;
-                  j < headers.length;
-                  j++
-                ) {
-                  record[
-                    headers[j]
-                  ] = values[j];
-                }
-
-                if (
-                  record.caseNumber ||
-                  record.jobTitle ||
-                  record.jobWrksNeeded ||
-                  record.clearanceOrderNumber
-                ) {
-                  records.push(
-                    record
-                  );
-                }
-              }
-            }
-          }
+        } catch (error) {
+          console.error(
+            `Erro lendo ${filename}:`,
+            error
+          );
         }
       }
 
-      if (records.length > 0) {
-        console.log(
-          `Feed ${dateString} encontrado: ${records.length} registros`
+      /*
+       * Remove duplicados por caseNumber.
+       */
+      const unique =
+        new Map();
+
+      for (const record of records) {
+        const caseNumber =
+          clean(record.caseNumber);
+
+        if (caseNumber) {
+          unique.set(
+            caseNumber,
+            record
+          );
+        }
+      }
+
+      const finalRecords =
+        Array.from(
+          unique.values()
         );
 
+      if (finalRecords.length > 0) {
         return {
-          records,
+          records: finalRecords,
           sourceDate: dateString
         };
       }
 
       console.log(
-        `Feed ${dateString} foi baixado, mas nenhum registro foi identificado.`
+        `ZIP ${dateString} não produziu registros 790/790A`
       );
     } catch (error) {
       console.error(
-        `Erro ao processar feed ${dateString}:`,
+        `Erro processando feed ${dateString}:`,
         error
       );
     }
@@ -836,6 +818,7 @@ async function downloadFeed() {
     "Feed 790/790A não encontrado ou não contém registros válidos."
   );
 }
+
 
 /*
  * As 41 colunas da tabela D1.
@@ -885,11 +868,16 @@ const JOB_COLUMNS = [
 ];
 
 const JOB_PLACEHOLDERS =
-  JOB_COLUMNS.map(() => "?").join(", ");
+  JOB_COLUMNS
+    .map(() => "?")
+    .join(", ");
 
 const JOB_UPDATE_COLUMNS =
   JOB_COLUMNS
-    .filter(column => column !== "caseNumber")
+    .filter(
+      column =>
+        column !== "caseNumber"
+    )
     .map(
       column =>
         `${column} = excluded.${column}`
@@ -998,71 +986,73 @@ async function saveJobsToD1(env, jobs) {
 
 async function getDatabaseStats(env) {
   const result =
-    await env.DB.prepare(`
-      SELECT
-        COUNT(*) AS total,
-        MAX(syncedAt) AS updatedAt
-      FROM jobs
-    `).first();
+    await env.DB
+      .prepare(`
+        SELECT
+          COUNT(*) AS total,
+          MAX(syncedAt) AS updatedAt
+        FROM jobs
+      `)
+      .first();
 
   return {
     total:
       Number(result?.total || 0),
 
     updatedAt:
-      result?.updatedAt ||
-      null
+      result?.updatedAt || null
   };
 }
 
 async function getJobsFromD1(env) {
   const result =
-    await env.DB.prepare(`
-      SELECT
-        id,
-        caseNumber,
-        title,
-        company,
-        city,
-        state,
-        address,
-        postcode,
-        county,
-        type,
-        description,
-        salaryMin,
-        salaryMax,
-        wagePer,
-        pieceRate,
-        specialPay,
-        payFrequency,
-        hours,
-        start,
-        end,
-        workers,
-        experience,
-        requirements,
-        education,
-        trainingMonths,
-        email,
-        phone,
-        phoneExtension,
-        applicationUrl,
-        applicationDetails,
-        housing,
-        transport,
-        meals,
-        tools,
-        posted,
-        socCode,
-        socTitle,
-        updatedAt,
-        sourceUrl,
-        source
-      FROM jobs
-      ORDER BY id DESC
-    `)
-    .all();
+    await env.DB
+      .prepare(`
+        SELECT
+          id,
+          caseNumber,
+          title,
+          company,
+          city,
+          state,
+          address,
+          postcode,
+          county,
+          type,
+          description,
+          salaryMin,
+          salaryMax,
+          wagePer,
+          pieceRate,
+          specialPay,
+          payFrequency,
+          hours,
+          start,
+          end,
+          workers,
+          experience,
+          requirements,
+          education,
+          trainingMonths,
+          email,
+          phone,
+          phoneExtension,
+          applicationUrl,
+          applicationDetails,
+          housing,
+          transport,
+          meals,
+          tools,
+          posted,
+          socCode,
+          socTitle,
+          updatedAt,
+          sourceUrl,
+          source
+        FROM jobs
+        ORDER BY id DESC
+      `)
+      .all();
 
   return result.results || [];
 }
@@ -1126,8 +1116,7 @@ export default {
       new URL(request.url);
 
     if (
-      request.method ===
-      "OPTIONS"
+      request.method === "OPTIONS"
     ) {
       return new Response(
         null,
@@ -1139,8 +1128,7 @@ export default {
     }
 
     if (
-      url.pathname ===
-      "/health"
+      url.pathname === "/health"
     ) {
       try {
         const stats =
@@ -1178,8 +1166,7 @@ export default {
     }
 
     if (
-      url.pathname ===
-      "/jobs"
+      url.pathname === "/jobs"
     ) {
       try {
         const jobs =
@@ -1220,8 +1207,7 @@ export default {
     }
 
     if (
-      url.pathname ===
-      "/sync"
+      url.pathname === "/sync"
     ) {
       try {
         const data =
