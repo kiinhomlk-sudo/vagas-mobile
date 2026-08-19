@@ -19,7 +19,9 @@ function responseJSON(data, status = 200) {
 }
 
 function clean(value) {
-  if (value === null || value === undefined) return "";
+  if (value === null || value === undefined) {
+    return "";
+  }
 
   if (typeof value === "string") {
     return value.trim();
@@ -38,14 +40,18 @@ function number(value) {
   }
 
   if (typeof value === "number") {
-    return Number.isFinite(value) ? value : null;
+    return Number.isFinite(value)
+      ? value
+      : null;
   }
 
   const match = String(value)
     .replace(/,/g, "")
     .match(/-?\d+(?:\.\d+)?/);
 
-  return match ? Number(match[0]) : null;
+  return match
+    ? Number(match[0])
+    : null;
 }
 
 function salary(record) {
@@ -73,7 +79,8 @@ function salary(record) {
     }
   }
 
-  const pieceRate = number(record.jobPieceRate);
+  const pieceRate =
+    number(record.jobPieceRate);
 
   return {
     min: pieceRate,
@@ -82,9 +89,13 @@ function salary(record) {
 }
 
 function experience(record) {
-  const months = number(record.jobMinexpmonths);
+  const months =
+    number(record.jobMinexpmonths);
 
-  if (months === null || months <= 0) {
+  if (
+    months === null ||
+    months <= 0
+  ) {
     return "Não exigida";
   }
 
@@ -92,7 +103,8 @@ function experience(record) {
 }
 
 function hours(record) {
-  const total = number(record.jobHoursTotal);
+  const total =
+    number(record.jobHoursTotal);
 
   if (total === null) {
     return "Não informado";
@@ -128,10 +140,16 @@ function transport(record) {
     .map(clean)
     .filter(Boolean);
 
-  const min = number(record.transportMinreimburse);
-  const max = number(record.transportMaxreimburse);
+  const min =
+    number(record.transportMinreimburse);
 
-  if (min !== null || max !== null) {
+  const max =
+    number(record.transportMaxreimburse);
+
+  if (
+    min !== null ||
+    max !== null
+  ) {
     let text = "Reembolso: ";
 
     if (min !== null) {
@@ -153,7 +171,8 @@ function transport(record) {
 function meals(record) {
   const values = [];
 
-  const description = clean(record.mealDescription);
+  const description =
+    clean(record.mealDescription);
 
   if (description) {
     values.push(description);
@@ -164,7 +183,8 @@ function meals(record) {
     record.mealIsCharged === "1";
 
   if (charged) {
-    const charge = number(record.mealCharge);
+    const charge =
+      number(record.mealCharge);
 
     values.push(
       charge !== null
@@ -181,21 +201,27 @@ function meals(record) {
 function requirements(record) {
   const values = [];
 
-  const additional = clean(record.jobAddReqinfo);
+  const additional =
+    clean(record.jobAddReqinfo);
 
   if (additional) {
     values.push(additional);
   }
 
-  const education = clean(record.jobMinedu);
+  const education =
+    clean(record.jobMinedu);
 
   if (education) {
     values.push(`Escolaridade: ${education}`);
   }
 
-  const training = number(record.jobMintrainingmonths);
+  const training =
+    number(record.jobMintrainingmonths);
 
-  if (training !== null && training > 0) {
+  if (
+    training !== null &&
+    training > 0
+  ) {
     values.push(
       `Treinamento: ${training} mês(es)`
     );
@@ -205,35 +231,44 @@ function requirements(record) {
     record.jobIsCert === 1 ||
     record.jobIsCert === "1"
   ) {
-    values.push("Certificação/licença exigida");
+    values.push(
+      "Certificação/licença exigida"
+    );
   }
 
   if (
     record.jobIsDriver === 1 ||
     record.jobIsDriver === "1"
   ) {
-    values.push("Requisitos para motorista");
+    values.push(
+      "Requisitos para motorista"
+    );
   }
 
   if (
     record.jobIsBackground === 1 ||
     record.jobIsBackground === "1"
   ) {
-    values.push("Verificação de antecedentes");
+    values.push(
+      "Verificação de antecedentes"
+    );
   }
 
   if (
     record.jobIsDrugScreen === 1 ||
     record.jobIsDrugScreen === "1"
   ) {
-    values.push("Teste de drogas");
+    values.push(
+      "Teste de drogas"
+    );
   }
 
   if (
     record.jobIsLifting === 1 ||
     record.jobIsLifting === "1"
   ) {
-    const weight = number(record.jobLiftingWeight);
+    const weight =
+      number(record.jobLiftingWeight);
 
     values.push(
       weight !== null
@@ -270,12 +305,16 @@ function makeId(record) {
     clean(record.caseNumber) ||
     clean(record.clearanceOrderNumber);
 
-  if (!source) return null;
+  if (!source) {
+    return null;
+  }
 
   const digits =
     String(source).replace(/\D/g, "");
 
-  if (!digits) return null;
+  if (!digits) {
+    return null;
+  }
 
   const id =
     Number(digits.slice(-15));
@@ -289,12 +328,19 @@ function mapJob(record) {
   const caseNumber =
     clean(record.caseNumber);
 
-  if (!caseNumber) return null;
+  if (!caseNumber) {
+    return null;
+  }
 
-  const pay = salary(record);
-  const id = makeId(record);
+  const pay =
+    salary(record);
 
-  if (id === null) return null;
+  const id =
+    makeId(record);
+
+  if (id === null) {
+    return null;
+  }
 
   return {
     id,
@@ -424,9 +470,10 @@ function mapJob(record) {
   };
 }
 
-/*
- * Procura registros JSON de forma recursiva.
- */
+/* =========================================================
+   LEITURA DOS REGISTROS
+   ========================================================= */
+
 function collectRecords(value, output = []) {
   if (!value) {
     return output;
@@ -444,12 +491,11 @@ function collectRecords(value, output = []) {
     return output;
   }
 
-  /*
-   * Registro 790/790A.
-   */
   if (
     value.caseNumber ||
+    value.case_number ||
     value.jobTitle ||
+    value.job_title ||
     value.jobWrksNeeded ||
     value.clearanceOrderNumber
   ) {
@@ -457,9 +503,6 @@ function collectRecords(value, output = []) {
     return output;
   }
 
-  /*
-   * Containers comuns.
-   */
   for (const key of [
     "data",
     "jobs",
@@ -467,9 +510,7 @@ function collectRecords(value, output = []) {
     "records",
     "items",
     "jobOrders",
-    "joborders",
-    "job_order",
-    "jobOrdersData"
+    "job_orders"
   ]) {
     if (value[key]) {
       collectRecords(
@@ -479,160 +520,74 @@ function collectRecords(value, output = []) {
     }
   }
 
-  /*
-   * Caso o JSON tenha uma estrutura diferente,
-   * procura objetos filhos também.
-   */
-  if (output.length === 0) {
-    for (const valueItem of Object.values(value)) {
-      if (
-        valueItem &&
-        typeof valueItem === "object"
-      ) {
-        collectRecords(
-          valueItem,
-          output
-        );
-      }
-    }
-  }
-
   return output;
 }
 
-/*
- * Tenta interpretar um texto como JSON,
- * JSON em linhas ou conteúdo que possua
- * um objeto JSON dentro.
- */
 function parseJSON(text) {
-  const value = text.trim();
+  const value =
+    text.trim();
 
   if (!value) {
     return [];
   }
 
-  /*
-   * JSON normal.
-   */
   try {
-    const parsed = JSON.parse(value);
-
-    const records =
-      collectRecords(parsed);
-
-    if (records.length) {
-      return records;
-    }
+    return collectRecords(
+      JSON.parse(value)
+    );
   } catch {
-    // Continua tentando.
-  }
+    const records = [];
 
-  /*
-   * NDJSON / JSON Lines.
-   */
-  const records = [];
+    for (
+      const line of
+      value.split(/\r?\n/)
+    ) {
+      const row =
+        line.trim();
 
-  for (
-    const line of value.split(/\r?\n/)
-  ) {
-    const row = line.trim();
+      if (!row) {
+        continue;
+      }
 
-    if (!row) continue;
+      try {
+        const parsed =
+          JSON.parse(row);
 
-    try {
-      const parsed = JSON.parse(row);
-
-      records.push(
-        ...collectRecords(parsed)
-      );
-    } catch {
-      // Ignora linha que não seja JSON.
+        records.push(
+          ...collectRecords(parsed)
+        );
+      } catch {
+        // Ignora linha inválida.
+      }
     }
-  }
 
-  if (records.length) {
     return records;
   }
-
-  /*
-   * Algumas fontes podem colocar JSON
-   * depois de texto adicional.
-   */
-  const firstBrace = value.indexOf("{");
-  const lastBrace = value.lastIndexOf("}");
-
-  if (
-    firstBrace >= 0 &&
-    lastBrace > firstBrace
-  ) {
-    try {
-      const parsed =
-        JSON.parse(
-          value.slice(
-            firstBrace,
-            lastBrace + 1
-          )
-        );
-
-      return collectRecords(parsed);
-    } catch {
-      // Não conseguiu interpretar.
-    }
-  }
-
-  return [];
 }
 
-/*
- * Verifica se os bytes parecem JSON/texto.
- */
-function looksLikeText(bytes) {
-  if (!bytes || bytes.length === 0) {
-    return false;
-  }
+/* =========================================================
+   DOWNLOAD DO FEED OFICIAL 790 / 790A
+   ========================================================= */
 
-  let printable = 0;
-  const sampleLength =
-    Math.min(bytes.length, 1000);
+async function downloadFeed() {
+  const today =
+    new Date();
+
+  /*
+   * O endpoint oficial recebe a data diretamente:
+   *
+   * /zip/jo/YYYY-MM-DD
+   *
+   * A resposta é um ZIP.
+   */
 
   for (
-    let i = 0;
-    i < sampleLength;
-    i++
+    let offset = 0;
+    offset <= 30;
+    offset++
   ) {
-    const byte = bytes[i];
-
-    if (
-      byte === 9 ||
-      byte === 10 ||
-      byte === 13 ||
-      (byte >= 32 && byte <= 126)
-    ) {
-      printable++;
-    }
-  }
-
-  return (
-    printable / sampleLength > 0.80
-  );
-}
-
-/*
- * NOVA versão do downloadFeed().
- *
- * Não depende mais da extensão do arquivo
- * que está dentro do ZIP.
- */
-async function downloadFeed() {
-  const today = new Date();
-
-  /*
-   * O feed oficial representa os últimos 20 dias.
-   * Tentamos do dia atual para trás.
-   */
-  for (let offset = 0; offset <= 20; offset++) {
-    const date = new Date(today);
+    const date =
+      new Date(today);
 
     date.setUTCDate(
       date.getUTCDate() - offset
@@ -646,21 +601,22 @@ async function downloadFeed() {
 
     try {
       console.log(
-        `Tentando feed 790/790A: ${url}`
+        `Consultando feed oficial: ${url}`
       );
 
-      const response = await fetch(url, {
-        method: "GET",
-        redirect: "follow",
-        headers: {
-          "Accept":
-            "application/zip, application/octet-stream, */*"
-        }
-      });
+      const response =
+        await fetch(url, {
+          method: "GET",
+          redirect: "follow",
+          headers: {
+            "Accept":
+              "application/zip, application/octet-stream, */*"
+          }
+        });
 
       if (!response.ok) {
         console.log(
-          `Feed ${dateString} retornou HTTP ${response.status}`
+          `Feed ${dateString}: HTTP ${response.status}`
         );
 
         continue;
@@ -676,40 +632,35 @@ async function downloadFeed() {
       }
 
       /*
-       * ZIP:
+       * Assinaturas ZIP:
        *
        * 50 4B 03 04
-       *
-       * Também aceitamos outros headers ZIP
-       * como diretórios vazios.
+       * 50 4B 05 06
+       * 50 4B 07 08
        */
+
       const isZip =
         bytes[0] === 0x50 &&
-        bytes[1] === 0x4B;
+        bytes[1] === 0x4B &&
+        (
+          (
+            bytes[2] === 0x03 &&
+            bytes[3] === 0x04
+          ) ||
+          (
+            bytes[2] === 0x05 &&
+            bytes[3] === 0x06
+          ) ||
+          (
+            bytes[2] === 0x07 &&
+            bytes[3] === 0x08
+          )
+        );
 
       if (!isZip) {
         console.log(
-          `Resposta ${dateString} não parece ZIP`
+          `Feed ${dateString} não retornou ZIP válido.`
         );
-
-        /*
-         * Caso o servidor entregue JSON
-         * diretamente, tentamos interpretar.
-         */
-        if (looksLikeText(bytes)) {
-          const text =
-            strFromU8(bytes);
-
-          const directRecords =
-            parseJSON(text);
-
-          if (directRecords.length) {
-            return {
-              records: directRecords,
-              sourceDate: dateString
-            };
-          }
-        }
 
         continue;
       }
@@ -721,7 +672,7 @@ async function downloadFeed() {
           unzipSync(bytes);
       } catch (error) {
         console.error(
-          `Erro descompactando ZIP ${dateString}:`,
+          `Erro ao descompactar ${dateString}:`,
           error
         );
 
@@ -731,57 +682,64 @@ async function downloadFeed() {
       const records = [];
 
       /*
-       * IMPORTANTE:
+       * Não vamos depender do nome/extensão
+       * do arquivo interno.
        *
-       * Não filtramos mais por .json/.txt/.dat.
-       *
-       * Todo arquivo do ZIP é analisado.
+       * Tentamos interpretar todo arquivo
+       * textual que estiver dentro do ZIP.
        */
+
       for (
         const [filename, fileBytes]
         of Object.entries(files)
       ) {
+        if (!fileBytes?.length) {
+          continue;
+        }
+
+        let text;
+
         try {
+          text =
+            strFromU8(fileBytes);
+        } catch {
+          continue;
+        }
+
+        if (!text?.trim()) {
+          continue;
+        }
+
+        const parsed =
+          parseJSON(text);
+
+        if (parsed.length) {
           console.log(
-            `Analisando arquivo do feed: ${filename}`
+            `Arquivo ${filename}: ${parsed.length} registros`
           );
 
-          if (!looksLikeText(fileBytes)) {
-            continue;
-          }
-
-          const text =
-            strFromU8(fileBytes);
-
-          const parsedRecords =
-            parseJSON(text);
-
-          if (parsedRecords.length) {
-            records.push(
-              ...parsedRecords
-            );
-
-            console.log(
-              `Encontrados ${parsedRecords.length} registros em ${filename}`
-            );
-          }
-        } catch (error) {
-          console.error(
-            `Erro lendo ${filename}:`,
-            error
+          records.push(
+            ...parsed
           );
         }
       }
 
       /*
-       * Remove duplicados por caseNumber.
+       * Remove duplicados pelo caseNumber.
        */
+
       const unique =
         new Map();
 
-      for (const record of records) {
+      for (
+        const record
+        of records
+      ) {
         const caseNumber =
-          clean(record.caseNumber);
+          clean(
+            record.caseNumber ||
+            record.case_number
+          );
 
         if (caseNumber) {
           unique.set(
@@ -797,18 +755,25 @@ async function downloadFeed() {
         );
 
       if (finalRecords.length > 0) {
+        console.log(
+          `Feed encontrado em ${dateString}: ${finalRecords.length} registros`
+        );
+
         return {
-          records: finalRecords,
-          sourceDate: dateString
+          records:
+            finalRecords,
+
+          sourceDate:
+            dateString
         };
       }
 
       console.log(
-        `ZIP ${dateString} não produziu registros 790/790A`
+        `Feed ${dateString}: ZIP válido, mas nenhum registro reconhecido.`
       );
     } catch (error) {
       console.error(
-        `Erro processando feed ${dateString}:`,
+        `Erro ao processar feed ${dateString}:`,
         error
       );
     }
@@ -819,10 +784,10 @@ async function downloadFeed() {
   );
 }
 
+/* =========================================================
+   D1
+   ========================================================= */
 
-/*
- * As 41 colunas da tabela D1.
- */
 const JOB_COLUMNS = [
   "id",
   "caseNumber",
@@ -884,7 +849,10 @@ const JOB_UPDATE_COLUMNS =
     )
     .join(", ");
 
-function jobValues(job, syncedAt) {
+function jobValues(
+  job,
+  syncedAt
+) {
   return [
     job.id,
     job.caseNumber,
@@ -930,7 +898,10 @@ function jobValues(job, syncedAt) {
   ];
 }
 
-async function saveJobsToD1(env, jobs) {
+async function saveJobsToD1(
+  env,
+  jobs
+) {
   if (!jobs.length) {
     return {
       total: 0
@@ -980,11 +951,14 @@ async function saveJobsToD1(env, jobs) {
   }
 
   return {
-    total: jobs.length
+    total:
+      jobs.length
   };
 }
 
-async function getDatabaseStats(env) {
+async function getDatabaseStats(
+  env
+) {
   const result =
     await env.DB
       .prepare(`
@@ -997,14 +971,19 @@ async function getDatabaseStats(env) {
 
   return {
     total:
-      Number(result?.total || 0),
+      Number(
+        result?.total || 0
+      ),
 
     updatedAt:
-      result?.updatedAt || null
+      result?.updatedAt ||
+      null
   };
 }
 
-async function getJobsFromD1(env) {
+async function getJobsFromD1(
+  env
+) {
   const result =
     await env.DB
       .prepare(`
@@ -1054,10 +1033,15 @@ async function getJobsFromD1(env) {
       `)
       .all();
 
-  return result.results || [];
+  return (
+    result.results ||
+    []
+  );
 }
 
-async function updateDatabase(env) {
+async function updateDatabase(
+  env
+) {
   const feed =
     await downloadFeed();
 
@@ -1082,7 +1066,9 @@ async function updateDatabase(env) {
     );
 
   const stats =
-    await getDatabaseStats(env);
+    await getDatabaseStats(
+      env
+    );
 
   return {
     total:
@@ -1107,6 +1093,10 @@ async function updateDatabase(env) {
   };
 }
 
+/* =========================================================
+   WORKER
+   ========================================================= */
+
 export default {
   async fetch(
     request,
@@ -1116,7 +1106,8 @@ export default {
       new URL(request.url);
 
     if (
-      request.method === "OPTIONS"
+      request.method ===
+      "OPTIONS"
     ) {
       return new Response(
         null,
@@ -1127,8 +1118,11 @@ export default {
       );
     }
 
+    /* ================= HEALTH ================= */
+
     if (
-      url.pathname === "/health"
+      url.pathname ===
+      "/health"
     ) {
       try {
         const stats =
@@ -1165,8 +1159,11 @@ export default {
       }
     }
 
+    /* ================= JOBS ================= */
+
     if (
-      url.pathname === "/jobs"
+      url.pathname ===
+      "/jobs"
     ) {
       try {
         const jobs =
@@ -1206,8 +1203,11 @@ export default {
       }
     }
 
+    /* ================= SYNC ================= */
+
     if (
-      url.pathname === "/sync"
+      url.pathname ===
+      "/sync"
     ) {
       try {
         const data =
