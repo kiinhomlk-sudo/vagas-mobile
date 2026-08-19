@@ -19,7 +19,9 @@ function responseJSON(data, status = 200) {
 }
 
 function clean(value) {
-  if (value === null || value === undefined) return "";
+  if (value === null || value === undefined) {
+    return "";
+  }
 
   if (typeof value === "string") {
     return value.trim();
@@ -637,156 +639,154 @@ async function downloadFeed() {
   );
 }
 
+/*
+ * As 41 colunas da tabela D1.
+ *
+ * A lista é usada para gerar os placeholders
+ * automaticamente, evitando erro de quantidade.
+ */
+const JOB_COLUMNS = [
+  "id",
+  "caseNumber",
+  "title",
+  "company",
+  "city",
+  "state",
+  "address",
+  "postcode",
+  "county",
+  "type",
+  "description",
+  "salaryMin",
+  "salaryMax",
+  "wagePer",
+  "pieceRate",
+  "specialPay",
+  "payFrequency",
+  "hours",
+  "start",
+  "end",
+  "workers",
+  "experience",
+  "requirements",
+  "education",
+  "trainingMonths",
+  "email",
+  "phone",
+  "phoneExtension",
+  "applicationUrl",
+  "applicationDetails",
+  "housing",
+  "transport",
+  "meals",
+  "tools",
+  "posted",
+  "socCode",
+  "socTitle",
+  "updatedAt",
+  "sourceUrl",
+  "source",
+  "syncedAt"
+];
+
+const JOB_PLACEHOLDERS =
+  JOB_COLUMNS.map(() => "?").join(", ");
+
+const JOB_UPDATE_COLUMNS =
+  JOB_COLUMNS
+    .filter(column => column !== "caseNumber")
+    .map(
+      column =>
+        `${column} = excluded.${column}`
+    )
+    .join(", ");
+
+function jobValues(job, syncedAt) {
+  return [
+    job.id,
+    job.caseNumber,
+    job.title,
+    job.company,
+    job.city,
+    job.state,
+    job.address,
+    job.postcode,
+    job.county,
+    job.type,
+    job.description,
+    job.salaryMin,
+    job.salaryMax,
+    job.wagePer,
+    job.pieceRate,
+    job.specialPay,
+    job.payFrequency,
+    job.hours,
+    job.start,
+    job.end,
+    job.workers,
+    job.experience,
+    job.requirements,
+    job.education,
+    job.trainingMonths,
+    job.email,
+    job.phone,
+    job.phoneExtension,
+    job.applicationUrl,
+    job.applicationDetails,
+    job.housing,
+    job.transport,
+    job.meals,
+    job.tools,
+    job.posted,
+    job.socCode,
+    job.socTitle,
+    job.updatedAt,
+    job.sourceUrl,
+    job.source,
+    syncedAt
+  ];
+}
+
 async function saveJobsToD1(env, jobs) {
   if (!jobs.length) {
     return {
-      inserted: 0,
-      updated: 0
+      total: 0
     };
   }
 
   const syncedAt =
     new Date().toISOString();
 
-  const statements = jobs.map(job =>
-    env.DB.prepare(`
-      INSERT INTO jobs (
-        id,
-        caseNumber,
-        title,
-        company,
-        city,
-        state,
-        address,
-        postcode,
-        county,
-        type,
-        description,
-        salaryMin,
-        salaryMax,
-        wagePer,
-        pieceRate,
-        specialPay,
-        payFrequency,
-        hours,
-        start,
-        end,
-        workers,
-        experience,
-        requirements,
-        education,
-        trainingMonths,
-        email,
-        phone,
-        phoneExtension,
-        applicationUrl,
-        applicationDetails,
-        housing,
-        transport,
-        meals,
-        tools,
-        posted,
-        socCode,
-        socTitle,
-        updatedAt,
-        sourceUrl,
-        source,
-        syncedAt
-      )
-      VALUES (
-        ?,?,?,?,?,?,?,?,?,?,
-        ?,?,?,?,?,?,?,?,?,?,
-        ?,?,?,?,?,?,?,?,?,?,
-        ?,?,?,?,?,?,?,?,?,?,
-        ?,?
-      )
-      ON CONFLICT(caseNumber)
-      DO UPDATE SET
-        id = excluded.id,
-        title = excluded.title,
-        company = excluded.company,
-        city = excluded.city,
-        state = excluded.state,
-        address = excluded.address,
-        postcode = excluded.postcode,
-        county = excluded.county,
-        type = excluded.type,
-        description = excluded.description,
-        salaryMin = excluded.salaryMin,
-        salaryMax = excluded.salaryMax,
-        wagePer = excluded.wagePer,
-        pieceRate = excluded.pieceRate,
-        specialPay = excluded.specialPay,
-        payFrequency = excluded.payFrequency,
-        hours = excluded.hours,
-        start = excluded.start,
-        end = excluded.end,
-        workers = excluded.workers,
-        experience = excluded.experience,
-        requirements = excluded.requirements,
-        education = excluded.education,
-        trainingMonths = excluded.trainingMonths,
-        email = excluded.email,
-        phone = excluded.phone,
-        phoneExtension = excluded.phoneExtension,
-        applicationUrl = excluded.applicationUrl,
-        applicationDetails = excluded.applicationDetails,
-        housing = excluded.housing,
-        transport = excluded.transport,
-        meals = excluded.meals,
-        tools = excluded.tools,
-        posted = excluded.posted,
-        socCode = excluded.socCode,
-        socTitle = excluded.socTitle,
-        updatedAt = excluded.updatedAt,
-        sourceUrl = excluded.sourceUrl,
-        source = excluded.source,
-        syncedAt = excluded.syncedAt
-    `).bind(
-      job.id,
-      job.caseNumber,
-      job.title,
-      job.company,
-      job.city,
-      job.state,
-      job.address,
-      job.postcode,
-      job.county,
-      job.type,
-      job.description,
-      job.salaryMin,
-      job.salaryMax,
-      job.wagePer,
-      job.pieceRate,
-      job.specialPay,
-      job.payFrequency,
-      job.hours,
-      job.start,
-      job.end,
-      job.workers,
-      job.experience,
-      job.requirements,
-      job.education,
-      job.trainingMonths,
-      job.email,
-      job.phone,
-      job.phoneExtension,
-      job.applicationUrl,
-      job.applicationDetails,
-      job.housing,
-      job.transport,
-      job.meals,
-      job.tools,
-      job.posted,
-      job.socCode,
-      job.socTitle,
-      job.updatedAt,
-      job.sourceUrl,
-      job.source,
-      syncedAt
+  const sql = `
+    INSERT INTO jobs (
+      ${JOB_COLUMNS.join(", ")}
     )
-  );
+    VALUES (
+      ${JOB_PLACEHOLDERS}
+    )
+    ON CONFLICT(caseNumber)
+    DO UPDATE SET
+      ${JOB_UPDATE_COLUMNS}
+  `;
 
+  const statements =
+    jobs.map(job =>
+      env.DB
+        .prepare(sql)
+        .bind(
+          ...jobValues(
+            job,
+            syncedAt
+          )
+        )
+    );
+
+  /*
+   * Cada statement tem 41 parâmetros.
+   * O limite atual do D1 para parâmetros
+   * por query é 100, portanto cada statement
+   * individual está dentro do limite.
+   */
   const CHUNK_SIZE = 50;
 
   for (
@@ -803,8 +803,26 @@ async function saveJobsToD1(env, jobs) {
   }
 
   return {
-    inserted: jobs.length,
-    updated: 0
+    total: jobs.length
+  };
+}
+
+async function getDatabaseStats(env) {
+  const result =
+    await env.DB.prepare(`
+      SELECT
+        COUNT(*) AS total,
+        MAX(syncedAt) AS updatedAt
+      FROM jobs
+    `).first();
+
+  return {
+    total:
+      Number(result?.total || 0),
+
+    updatedAt:
+      result?.updatedAt ||
+      null
   };
 }
 
@@ -884,31 +902,25 @@ async function updateDatabase(env) {
       jobs
     );
 
-  const count =
-    await env.DB.prepare(`
-      SELECT COUNT(*) AS total
-      FROM jobs
-    `).first();
+  const stats =
+    await getDatabaseStats(env);
 
   return {
     total:
-      Number(count?.total || 0),
+      stats.total,
 
     sourceDate:
       feed.sourceDate,
 
     updatedAt:
-      new Date().toISOString(),
+      stats.updatedAt,
 
     sync: {
       received:
         feed.records.length,
 
-      inserted:
-        sync.inserted,
-
-      updated:
-        sync.updated
+      processed:
+        sync.total
     },
 
     source:
@@ -939,38 +951,66 @@ export default {
 
     if (
       url.pathname ===
+      "/health"
+    ) {
+      try {
+        const stats =
+          await getDatabaseStats(
+            env
+          );
+
+        return responseJSON({
+          ok: true,
+
+          database:
+            "D1",
+
+          total:
+            stats.total,
+
+          updatedAt:
+            stats.updatedAt
+        });
+      } catch (error) {
+        return responseJSON(
+          {
+            ok: false,
+
+            database:
+              "D1",
+
+            error:
+              error?.message ||
+              String(error)
+          },
+          500
+        );
+      }
+    }
+
+    if (
+      url.pathname ===
       "/jobs"
     ) {
       try {
         const jobs =
-          await getJobsFromD1(env);
+          await getJobsFromD1(
+            env
+          );
 
-        const count =
-          await env.DB.prepare(`
-            SELECT
-              COUNT(*) AS total,
-              MAX(syncedAt) AS updatedAt
-            FROM jobs
-          `).first();
+        const stats =
+          await getDatabaseStats(
+            env
+          );
 
         return responseJSON({
           jobs,
 
           total:
-            Number(count?.total || 0),
+            stats.total,
 
           updatedAt:
-            count?.updatedAt ||
-            null,
-
-          sourceDate:
-            null,
-
-          sync: {
-            received: 0,
-            inserted: 0,
-            updated: 0
-          },
+            stats.updatedAt,
 
           source:
             "U.S. Department of Labor — SeasonalJobs.dol.gov"
@@ -996,7 +1036,9 @@ export default {
     ) {
       try {
         const data =
-          await updateDatabase(env);
+          await updateDatabase(
+            env
+          );
 
         return responseJSON({
           ok: true,
@@ -1017,49 +1059,6 @@ export default {
         return responseJSON(
           {
             ok: false,
-
-            error:
-              error?.message ||
-              String(error)
-          },
-          502
-        );
-      }
-    }
-
-    if (
-      url.pathname ===
-      "/health"
-    ) {
-      try {
-        const result =
-          await env.DB.prepare(`
-            SELECT
-              COUNT(*) AS total,
-              MAX(syncedAt) AS updatedAt
-            FROM jobs
-          `).first();
-
-        return responseJSON({
-          ok: true,
-
-          database:
-            "D1",
-
-          total:
-            Number(result?.total || 0),
-
-          updatedAt:
-            result?.updatedAt ||
-            null
-        });
-      } catch (error) {
-        return responseJSON(
-          {
-            ok: false,
-
-            database:
-              "D1",
 
             error:
               error?.message ||
