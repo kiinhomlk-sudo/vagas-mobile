@@ -1,13 +1,17 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
+
   "name": "seasonaljobs-worker",
+
   "main": "src/index.js",
+
   "compatibility_date": "2026-08-15",
 
-  "kv_namespaces": [
+  "d1_databases": [
     {
-      "binding": "JOBS",
-      "id": "COLOQUE_O_ID_DO_SEU_KV_AQUI"
+      "binding": "DB",
+      "database_name": "seasonaljobs",
+      "database_id": "00000005-00000000-000050cc-90c46ae12a0e0103c859c55b9a9df506"
     }
   ],
 
