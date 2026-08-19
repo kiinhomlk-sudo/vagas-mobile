@@ -19,14 +19,8 @@ function responseJSON(data, status = 200) {
 }
 
 function clean(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  if (typeof value === "string") {
-    return value.trim();
-  }
-
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value.trim();
   return value;
 }
 
@@ -40,18 +34,14 @@ function number(value) {
   }
 
   if (typeof value === "number") {
-    return Number.isFinite(value)
-      ? value
-      : null;
+    return Number.isFinite(value) ? value : null;
   }
 
   const match = String(value)
     .replace(/,/g, "")
     .match(/-?\d+(?:\.\d+)?/);
 
-  return match
-    ? Number(match[0])
-    : null;
+  return match ? Number(match[0]) : null;
 }
 
 function salary(record) {
@@ -79,8 +69,7 @@ function salary(record) {
     }
   }
 
-  const pieceRate =
-    number(record.jobPieceRate);
+  const pieceRate = number(record.jobPieceRate);
 
   return {
     min: pieceRate,
@@ -89,13 +78,9 @@ function salary(record) {
 }
 
 function experience(record) {
-  const months =
-    number(record.jobMinexpmonths);
+  const months = number(record.jobMinexpmonths);
 
-  if (
-    months === null ||
-    months <= 0
-  ) {
+  if (months === null || months <= 0) {
     return "Não exigida";
   }
 
@@ -103,8 +88,7 @@ function experience(record) {
 }
 
 function hours(record) {
-  const total =
-    number(record.jobHoursTotal);
+  const total = number(record.jobHoursTotal);
 
   if (total === null) {
     return "Não informado";
@@ -140,16 +124,10 @@ function transport(record) {
     .map(clean)
     .filter(Boolean);
 
-  const min =
-    number(record.transportMinreimburse);
+  const min = number(record.transportMinreimburse);
+  const max = number(record.transportMaxreimburse);
 
-  const max =
-    number(record.transportMaxreimburse);
-
-  if (
-    min !== null ||
-    max !== null
-  ) {
+  if (min !== null || max !== null) {
     let text = "Reembolso: ";
 
     if (min !== null) {
@@ -218,10 +196,7 @@ function requirements(record) {
   const training =
     number(record.jobMintrainingmonths);
 
-  if (
-    training !== null &&
-    training > 0
-  ) {
+  if (training !== null && training > 0) {
     values.push(
       `Treinamento: ${training} mês(es)`
     );
@@ -231,36 +206,28 @@ function requirements(record) {
     record.jobIsCert === 1 ||
     record.jobIsCert === "1"
   ) {
-    values.push(
-      "Certificação/licença exigida"
-    );
+    values.push("Certificação/licença exigida");
   }
 
   if (
     record.jobIsDriver === 1 ||
     record.jobIsDriver === "1"
   ) {
-    values.push(
-      "Requisitos para motorista"
-    );
+    values.push("Requisitos para motorista");
   }
 
   if (
     record.jobIsBackground === 1 ||
     record.jobIsBackground === "1"
   ) {
-    values.push(
-      "Verificação de antecedentes"
-    );
+    values.push("Verificação de antecedentes");
   }
 
   if (
     record.jobIsDrugScreen === 1 ||
     record.jobIsDrugScreen === "1"
   ) {
-    values.push(
-      "Teste de drogas"
-    );
+    values.push("Teste de drogas");
   }
 
   if (
@@ -305,16 +272,12 @@ function makeId(record) {
     clean(record.caseNumber) ||
     clean(record.clearanceOrderNumber);
 
-  if (!source) {
-    return null;
-  }
+  if (!source) return null;
 
   const digits =
     String(source).replace(/\D/g, "");
 
-  if (!digits) {
-    return null;
-  }
+  if (!digits) return null;
 
   const id =
     Number(digits.slice(-15));
@@ -328,23 +291,15 @@ function mapJob(record) {
   const caseNumber =
     clean(record.caseNumber);
 
-  if (!caseNumber) {
-    return null;
-  }
+  if (!caseNumber) return null;
 
-  const pay =
-    salary(record);
+  const pay = salary(record);
+  const id = makeId(record);
 
-  const id =
-    makeId(record);
-
-  if (id === null) {
-    return null;
-  }
+  if (id === null) return null;
 
   return {
     id,
-
     caseNumber,
 
     title:
@@ -357,31 +312,19 @@ function mapJob(record) {
       clean(record.empTradeName) ||
       "Empresa não informada",
 
-    city:
-      clean(record.jobCity),
-
-    state:
-      clean(record.jobState),
-
-    address:
-      clean(record.jobAddr1),
-
-    postcode:
-      clean(record.jobPostcode),
-
-    county:
-      clean(record.jobCounty),
+    city: clean(record.jobCity),
+    state: clean(record.jobState),
+    address: clean(record.jobAddr1),
+    postcode: clean(record.jobPostcode),
+    county: clean(record.jobCounty),
 
     type: "H-2A",
 
     description:
       description(record),
 
-    salaryMin:
-      pay.min,
-
-    salaryMax:
-      pay.max,
+    salaryMin: pay.min,
+    salaryMax: pay.max,
 
     wagePer:
       clean(record.jobWagePer),
@@ -470,14 +413,8 @@ function mapJob(record) {
   };
 }
 
-/* =========================================================
-   LEITURA DOS REGISTROS
-   ========================================================= */
-
 function collectRecords(value, output = []) {
-  if (!value) {
-    return output;
-  }
+  if (!value) return output;
 
   if (Array.isArray(value)) {
     for (const item of value) {
@@ -524,12 +461,9 @@ function collectRecords(value, output = []) {
 }
 
 function parseJSON(text) {
-  const value =
-    text.trim();
+  const value = text.trim();
 
-  if (!value) {
-    return [];
-  }
+  if (!value) return [];
 
   try {
     return collectRecords(
@@ -542,19 +476,15 @@ function parseJSON(text) {
       const line of
       value.split(/\r?\n/)
     ) {
-      const row =
-        line.trim();
+      const row = line.trim();
 
-      if (!row) {
-        continue;
-      }
+      if (!row) continue;
 
       try {
-        const parsed =
-          JSON.parse(row);
-
         records.push(
-          ...collectRecords(parsed)
+          ...collectRecords(
+            JSON.parse(row)
+          )
         );
       } catch {
         // Ignora linha inválida.
@@ -566,20 +496,110 @@ function parseJSON(text) {
 }
 
 /* =========================================================
-   DOWNLOAD DO FEED OFICIAL 790 / 790A
+   DIAGNÓSTICO DO FEED
+   ========================================================= */
+
+async function debugFeed() {
+  const date = "2026-08-19";
+
+  const url =
+    `${DOL_FEED}/${date}`;
+
+  const response =
+    await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      headers: {
+        "Accept": "*/*"
+      }
+    });
+
+  const bytes =
+    new Uint8Array(
+      await response.arrayBuffer()
+    );
+
+  const firstBytes =
+    Array.from(
+      bytes.slice(0, 32)
+    )
+      .map(
+        n =>
+          n.toString(16)
+            .padStart(2, "0")
+      )
+      .join(" ");
+
+  const isZip =
+    bytes.length >= 4 &&
+    bytes[0] === 0x50 &&
+    bytes[1] === 0x4b;
+
+  let zipFiles = [];
+
+  let unzipError = null;
+
+  if (isZip) {
+    try {
+      const files =
+        unzipSync(bytes);
+
+      zipFiles =
+        Object.entries(files)
+          .map(
+            ([name, data]) => ({
+              name,
+              size: data.length
+            })
+          );
+    } catch (error) {
+      unzipError =
+        error?.message ||
+        String(error);
+    }
+  }
+
+  return {
+    ok: true,
+
+    url,
+
+    status:
+      response.status,
+
+    statusText:
+      response.statusText,
+
+    contentType:
+      response.headers.get(
+        "content-type"
+      ),
+
+    contentLength:
+      response.headers.get(
+        "content-length"
+      ),
+
+    size:
+      bytes.length,
+
+    firstBytes,
+
+    isZip,
+
+    zipFiles,
+
+    unzipError
+  };
+}
+
+/* =========================================================
+   DOWNLOAD FEED
    ========================================================= */
 
 async function downloadFeed() {
   const today =
     new Date();
-
-  /*
-   * O endpoint oficial recebe a data diretamente:
-   *
-   * /zip/jo/YYYY-MM-DD
-   *
-   * A resposta é um ZIP.
-   */
 
   for (
     let offset = 0;
@@ -600,25 +620,16 @@ async function downloadFeed() {
       `${DOL_FEED}/${dateString}`;
 
     try {
-      console.log(
-        `Consultando feed oficial: ${url}`
-      );
-
       const response =
         await fetch(url, {
           method: "GET",
           redirect: "follow",
           headers: {
-            "Accept":
-              "application/zip, application/octet-stream, */*"
+            "Accept": "*/*"
           }
         });
 
       if (!response.ok) {
-        console.log(
-          `Feed ${dateString}: HTTP ${response.status}`
-        );
-
         continue;
       }
 
@@ -627,70 +638,21 @@ async function downloadFeed() {
           await response.arrayBuffer()
         );
 
-      if (bytes.length < 4) {
+      if (
+        bytes.length < 4 ||
+        bytes[0] !== 0x50 ||
+        bytes[1] !== 0x4b
+      ) {
         continue;
       }
 
-      /*
-       * Assinaturas ZIP:
-       *
-       * 50 4B 03 04
-       * 50 4B 05 06
-       * 50 4B 07 08
-       */
-
-      const isZip =
-        bytes[0] === 0x50 &&
-        bytes[1] === 0x4B &&
-        (
-          (
-            bytes[2] === 0x03 &&
-            bytes[3] === 0x04
-          ) ||
-          (
-            bytes[2] === 0x05 &&
-            bytes[3] === 0x06
-          ) ||
-          (
-            bytes[2] === 0x07 &&
-            bytes[3] === 0x08
-          )
-        );
-
-      if (!isZip) {
-        console.log(
-          `Feed ${dateString} não retornou ZIP válido.`
-        );
-
-        continue;
-      }
-
-      let files;
-
-      try {
-        files =
-          unzipSync(bytes);
-      } catch (error) {
-        console.error(
-          `Erro ao descompactar ${dateString}:`,
-          error
-        );
-
-        continue;
-      }
+      const files =
+        unzipSync(bytes);
 
       const records = [];
 
-      /*
-       * Não vamos depender do nome/extensão
-       * do arquivo interno.
-       *
-       * Tentamos interpretar todo arquivo
-       * textual que estiver dentro do ZIP.
-       */
-
       for (
-        const [filename, fileBytes]
+        const [, fileBytes]
         of Object.entries(files)
       ) {
         if (!fileBytes?.length) {
@@ -710,23 +672,10 @@ async function downloadFeed() {
           continue;
         }
 
-        const parsed =
-          parseJSON(text);
-
-        if (parsed.length) {
-          console.log(
-            `Arquivo ${filename}: ${parsed.length} registros`
-          );
-
-          records.push(
-            ...parsed
-          );
-        }
+        records.push(
+          ...parseJSON(text)
+        );
       }
-
-      /*
-       * Remove duplicados pelo caseNumber.
-       */
 
       const unique =
         new Map();
@@ -754,11 +703,7 @@ async function downloadFeed() {
           unique.values()
         );
 
-      if (finalRecords.length > 0) {
-        console.log(
-          `Feed encontrado em ${dateString}: ${finalRecords.length} registros`
-        );
-
+      if (finalRecords.length) {
         return {
           records:
             finalRecords,
@@ -767,20 +712,16 @@ async function downloadFeed() {
             dateString
         };
       }
-
-      console.log(
-        `Feed ${dateString}: ZIP válido, mas nenhum registro reconhecido.`
-      );
     } catch (error) {
       console.error(
-        `Erro ao processar feed ${dateString}:`,
+        `Erro no feed ${dateString}:`,
         error
       );
     }
   }
 
   throw new Error(
-    "Feed 790/790A não encontrado ou não contém registros válidos."
+    "Feed 790/790A não encontrado."
   );
 }
 
@@ -935,30 +876,22 @@ async function saveJobsToD1(
         )
     );
 
-  const CHUNK_SIZE = 50;
-
   for (
     let i = 0;
     i < statements.length;
-    i += CHUNK_SIZE
+    i += 50
   ) {
     await env.DB.batch(
-      statements.slice(
-        i,
-        i + CHUNK_SIZE
-      )
+      statements.slice(i, i + 50)
     );
   }
 
   return {
-    total:
-      jobs.length
+    total: jobs.length
   };
 }
 
-async function getDatabaseStats(
-  env
-) {
+async function getDatabaseStats(env) {
   const result =
     await env.DB
       .prepare(`
@@ -971,19 +904,14 @@ async function getDatabaseStats(
 
   return {
     total:
-      Number(
-        result?.total || 0
-      ),
+      Number(result?.total || 0),
 
     updatedAt:
-      result?.updatedAt ||
-      null
+      result?.updatedAt || null
   };
 }
 
-async function getJobsFromD1(
-  env
-) {
+async function getJobsFromD1(env) {
   const result =
     await env.DB
       .prepare(`
@@ -1033,15 +961,10 @@ async function getJobsFromD1(
       `)
       .all();
 
-  return (
-    result.results ||
-    []
-  );
+  return result.results || [];
 }
 
-async function updateDatabase(
-  env
-) {
+async function updateDatabase(env) {
   const feed =
     await downloadFeed();
 
@@ -1066,9 +989,7 @@ async function updateDatabase(
     );
 
   const stats =
-    await getDatabaseStats(
-      env
-    );
+    await getDatabaseStats(env);
 
   return {
     total:
@@ -1086,10 +1007,7 @@ async function updateDatabase(
 
       processed:
         sync.total
-    },
-
-    source:
-      "U.S. Department of Labor — SeasonalJobs.dol.gov"
+    }
   };
 }
 
@@ -1106,50 +1024,55 @@ export default {
       new URL(request.url);
 
     if (
-      request.method ===
-      "OPTIONS"
+      request.method === "OPTIONS"
     ) {
-      return new Response(
-        null,
-        {
-          status: 204,
-          headers: HEADERS
-        }
-      );
+      return new Response(null, {
+        status: 204,
+        headers: HEADERS
+      });
     }
 
-    /* ================= HEALTH ================= */
+    /* NOVA ROTA DE DIAGNÓSTICO */
 
     if (
-      url.pathname ===
-      "/health"
+      url.pathname === "/debug-feed"
+    ) {
+      try {
+        const data =
+          await debugFeed();
+
+        return responseJSON(data);
+      } catch (error) {
+        return responseJSON(
+          {
+            ok: false,
+            error:
+              error?.message ||
+              String(error)
+          },
+          502
+        );
+      }
+    }
+
+    if (
+      url.pathname === "/health"
     ) {
       try {
         const stats =
-          await getDatabaseStats(
-            env
-          );
+          await getDatabaseStats(env);
 
         return responseJSON({
           ok: true,
-
-          database:
-            "D1",
-
-          total:
-            stats.total,
-
-          updatedAt:
-            stats.updatedAt
+          database: "D1",
+          total: stats.total,
+          updatedAt: stats.updatedAt
         });
       } catch (error) {
         return responseJSON(
           {
             ok: false,
-
-            database:
-              "D1",
-
+            database: "D1",
             error:
               error?.message ||
               String(error)
@@ -1159,32 +1082,20 @@ export default {
       }
     }
 
-    /* ================= JOBS ================= */
-
     if (
-      url.pathname ===
-      "/jobs"
+      url.pathname === "/jobs"
     ) {
       try {
         const jobs =
-          await getJobsFromD1(
-            env
-          );
+          await getJobsFromD1(env);
 
         const stats =
-          await getDatabaseStats(
-            env
-          );
+          await getDatabaseStats(env);
 
         return responseJSON({
           jobs,
-
-          total:
-            stats.total,
-
-          updatedAt:
-            stats.updatedAt,
-
+          total: stats.total,
+          updatedAt: stats.updatedAt,
           source:
             "U.S. Department of Labor — SeasonalJobs.dol.gov"
         });
@@ -1193,7 +1104,6 @@ export default {
           {
             error:
               "Não foi possível consultar as vagas no D1.",
-
             details:
               error?.message ||
               String(error)
@@ -1203,38 +1113,24 @@ export default {
       }
     }
 
-    /* ================= SYNC ================= */
-
     if (
-      url.pathname ===
-      "/sync"
+      url.pathname === "/sync"
     ) {
       try {
         const data =
-          await updateDatabase(
-            env
-          );
+          await updateDatabase(env);
 
         return responseJSON({
           ok: true,
-
-          total:
-            data.total,
-
-          sync:
-            data.sync,
-
-          sourceDate:
-            data.sourceDate,
-
-          updatedAt:
-            data.updatedAt
+          total: data.total,
+          sync: data.sync,
+          sourceDate: data.sourceDate,
+          updatedAt: data.updatedAt
         });
       } catch (error) {
         return responseJSON(
           {
             ok: false,
-
             error:
               error?.message ||
               String(error)
