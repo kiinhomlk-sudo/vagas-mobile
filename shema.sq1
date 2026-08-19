@@ -1,0 +1,61 @@
+CREATE TABLE IF NOT EXISTS jobs (
+  id INTEGER PRIMARY KEY,
+  caseNumber TEXT NOT NULL UNIQUE,
+  title TEXT,
+  company TEXT,
+  city TEXT,
+  state TEXT,
+  address TEXT,
+  postcode TEXT,
+  county TEXT,
+  type TEXT,
+  description TEXT,
+  salaryMin REAL,
+  salaryMax REAL,
+  wagePer TEXT,
+  pieceRate TEXT,
+  specialPay TEXT,
+  payFrequency TEXT,
+  hours TEXT,
+  start TEXT,
+  end TEXT,
+  workers TEXT,
+  experience TEXT,
+  requirements TEXT,
+  education TEXT,
+  trainingMonths REAL,
+  email TEXT,
+  phone TEXT,
+  phoneExtension TEXT,
+  applicationUrl TEXT,
+  applicationDetails TEXT,
+  housing TEXT,
+  transport TEXT,
+  meals TEXT,
+  tools TEXT,
+  posted TEXT,
+  socCode TEXT,
+  socTitle TEXT,
+  updatedAt TEXT,
+  sourceUrl TEXT,
+  source TEXT,
+  syncedAt TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_jobs_state
+ON jobs(state);
+
+CREATE INDEX IF NOT EXISTS idx_jobs_city
+ON jobs(city);
+
+CREATE INDEX IF NOT EXISTS idx_jobs_title
+ON jobs(title);
+
+CREATE INDEX IF NOT EXISTS idx_jobs_company
+ON jobs(company);
+
+CREATE INDEX IF NOT EXISTS idx_jobs_start
+ON jobs(start);
+
+CREATE INDEX IF NOT EXISTS idx_jobs_caseNumber
+ON jobs(caseNumber);
