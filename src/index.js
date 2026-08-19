@@ -557,7 +557,103 @@ function parseJSON(text) {
   }
 }
 
+async function downloadFeed() {
+  const today = new Date();
 
+  for (let offset = 0; offset <= 2; offset++) {
+    const date = new Date(today);
+
+    date.setUTCDate(
+      date.getUTCDate() - offset
+    );
+
+    const dateString =
+      date.toISOString().slice(0, 10);
+
+    const url =
+      `${DOL_FEED}/${dateString}`;
+
+    const response = await fetch(url, {
+      headers: {
+        "Accept": "*/*"
+      }
+    });
+
+    if (!response.ok) {
+      continue;
+    }
+
+    const bytes =
+      new Uint8Array(
+        await response.arrayBuffer()
+      );
+
+    /*
+     * O endpoint oficial retorna um ZIP.
+     * Não dependemos do Content-Type.
+     */
+    try {
+      const files = unzipSync(bytes);
+
+      const records = [];
+
+      for (
+        const [filename, fileBytes]
+        of Object.entries(files)
+      ) {
+        const lower =
+          filename.toLowerCase();
+
+        if (
+          !lower.endsWith(".json") &&
+          !lower.endsWith(".ndjson") &&
+          !lower.endsWith(".txt") &&
+          !lower.endsWith(".dat")
+        ) {
+          continue;
+        }
+
+        records.push(
+          ...parseJSON(
+            strFromU8(fileBytes)
+          )
+        );
+      }
+
+      if (records.length) {
+        return {
+          records,
+          sourceDate: dateString
+        };
+      }
+    } catch {
+      /*
+       * Se por algum motivo a resposta não for ZIP,
+       * tenta interpretar diretamente como JSON.
+       */
+      try {
+        const text =
+          new TextDecoder().decode(bytes);
+
+        const records =
+          parseJSON(text);
+
+        if (records.length) {
+          return {
+            records,
+            sourceDate: dateString
+          };
+        }
+      } catch {
+        // Continua tentando a próxima data.
+      }
+    }
+  }
+
+  throw new Error(
+    "Feed 790/790A não encontrado."
+  );
+}
 /*
  * As 41 colunas da tabela D1.
  *
